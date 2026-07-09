@@ -22,7 +22,7 @@ class _SettingsViewContent extends StatelessWidget {
     final viewModel = context.watch<SettingsViewModel>();
     
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9FC), // Soft, pastel background
+      backgroundColor: const Color(0xFFFFF8D6), // Light pastel yellow background
       appBar: AppBar(
         title: const Text(
           '설정',
@@ -237,7 +237,7 @@ class _ParentSettingsButtonState extends State<_ParentSettingsButton> with Singl
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 24),
           decoration: ShapeDecoration(
-            color: const Color(0xFFE2E8F0), // Neutral clean tone
+            color: const Color(0xFFEBE8D5), // Yellowish gray background
             shape: ContinuousRectangleBorder(
               borderRadius: BorderRadius.circular(40), // Organic continuous curve
             ),
