@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/chat_view_model.dart';
+import '../settings/settings_view.dart';
 
 class ChatView extends StatelessWidget {
   const ChatView({super.key});
@@ -48,7 +49,12 @@ class _ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
             color: Color(0xFF424242),
             size: 32,
           ),
-          onPressed: () {}, // To be implemented
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const SettingsView()),
+            );
+          },
         ),
       ],
     );
