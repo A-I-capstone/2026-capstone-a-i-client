@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/settings/settings_viewmodel.dart';
+import 'parent_settings_view.dart';
 
 class SettingsView extends StatelessWidget {
   const SettingsView({super.key});
@@ -66,7 +67,14 @@ class _SettingsViewContent extends StatelessWidget {
               const Spacer(),
               
               _ParentSettingsButton(
-                onTap: viewModel.onParentSettingsClicked,
+                onTap: () {
+                  viewModel.onParentSettingsClicked();
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const ParentSettingsView(),
+                    ),
+                  );
+                },
               ),
               const SizedBox(height: 16),
             ],
