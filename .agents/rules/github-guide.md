@@ -98,18 +98,14 @@ git reset --hard HEAD
 ### Instructions for AI Agents
 
 1. DO NOT USE `git reset --hard` or any force push commands.
-2. Use English when writing commit message. Follow the conventions strictly.
-3. Before executing ANY Git command, you MUST present a brief explanation and a **Quantified Risk Assessment** to the user, and wait for user confirmation if the Risk Score is 3 or higher. Use the following format:
+2. Use English when writing commit messages. Follow the conventional commit style strictly.
+3. Before executing ANY Git command, you MUST present a brief explanation and a risk assessment to the user. You MUST wait for user confirmation if the command can lose local/GitHub code (Yes) or if it is not completely reversible (No). Use the following format:
 
 **Format:**
-   - **Command:** `git <command>`
-   - **Purpose:** <Brief description of what this command does>
-   - **Risk Score:** [1 to 5] / 5
-   - **Risk Assessment:** <Brief explanation of potential data loss or workflow disruption>
-
-**Risk Score Framework:**
-   - **1/5 (Safe / Read-only):** `git status`, `git diff`, `git log`. No changes are made to the codebase.
-   - **2/5 (Local Navigation & Staging):** `git checkout [existing-branch]`, `git add`. Easily reversible, zero risk of data loss.
-   - **3/5 (Local State Mutation):** `git commit`, `git checkout -b`. Creates new local history or branches. Requires basic attention.
-   - **4/5 (Remote Sync & History Modification):** `git pull`, `git push`, `git commit --amend`. Interacts with the remote repository or modifies recent history. Potential for merge conflicts or minor confusion.
-   - **5/5 (Destructive / Irreversible):** `git reset --hard` or any destructive action. High risk of permanent data loss or breaking the team's shared history. (Reminder: AI is strictly forbidden from executing this).
+- **Command:** `git <command>`
+- **Purpose:** <Brief description of what this command does>
+- **Risk Assessment:**
+  - Can this command lose/overwrite local code? [Yes / No]
+  - Can this command lose/overwrite code in the GitHub repository? [Yes / No]
+  - Is this command completely reversible? [Yes / No]
+  - **Details:** <Brief explanation of potential data loss, merge conflicts, or workflow disruption if applicable>

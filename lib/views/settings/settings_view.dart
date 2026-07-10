@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/settings/settings_viewmodel.dart';
 import 'parent_settings_view.dart';
+import 'chatbot_tone_view.dart';
+import 'font_size_view.dart';
 
 class SettingsView extends StatelessWidget {
   const SettingsView({super.key});
@@ -47,8 +49,17 @@ class _SettingsViewContent extends StatelessWidget {
                 title: '글자 크기',
                 icon: Icons.format_size_rounded,
                 color: const Color(0xFFFFD1DC), // Pastel pink
-                onTap: viewModel.onTextSizeClicked,
+                onTap: () {
+                  viewModel.onTextSizeClicked();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const FontSizeView(),
+                    ),
+                  );
+                },
               ),
+
               const SizedBox(height: 20),
               _SettingsCard(
                 title: '기억 관리',
@@ -61,7 +72,15 @@ class _SettingsViewContent extends StatelessWidget {
                 title: '챗봇 수정',
                 icon: Icons.face_retouching_natural_rounded,
                 color: const Color(0xFFC7CEEA), // Pastel periwinkle
-                onTap: viewModel.onChatbotClicked,
+                onTap: () {
+                  viewModel.onChatbotClicked();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ChatbotToneView(),
+                    ),
+                  );
+                },
               ),
               
               const Spacer(),
