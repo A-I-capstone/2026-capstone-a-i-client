@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../viewmodels/chat_view_model.dart';
+import '../../viewmodels/chat/chat_viewmodel.dart';
 import '../settings/settings_view.dart';
+import '../../models/chat_message.dart';
 
 class ChatView extends StatelessWidget {
   const ChatView({super.key});
@@ -15,7 +16,7 @@ class ChatView extends StatelessWidget {
       body: const SafeArea(
         child: Column(
           children: [
-            Expanded(child: _GreetingBody()),
+            Expanded(child: _ChatListArea()),
             _ChatInputArea(),
           ],
         ),
@@ -64,6 +65,195 @@ class _ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 }
 
+class _ChatListArea extends StatelessWidget {
+  const _ChatListArea();
+
+  @override
+  Widget build(BuildContext context) {
+    final viewModel = context.watch<ChatViewModel>();
+    
+    if (viewModel.chatHistory.isEmpty) {
+      return const _GreetingBody();
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      itemCount: viewModel.chatHistory.length + (viewModel.isLoading ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (index == viewModel.chatHistory.length && viewModel.isLoading) {
+          return const _LoadingBubble();
+        }
+        
+        final message = viewModel.chatHistory[index];
+        return _ChatBubbleWidget(message: message);
+      },
+    );
+  }
+}
+
+class _ChatBubbleWidget extends StatelessWidget {
+  final ChatMessage message;
+
+  const _ChatBubbleWidget({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    final isUser = message.isUser;
+    
+    return Align(
+      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(begin: 0.0, end: 1.0),
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.elasticOut,
+        builder: (context, value, child) {
+          return Transform.scale(
+            scale: value,
+            alignment: isUser ? Alignment.bottomRight : Alignment.bottomLeft,
+            child: child,
+          );
+        },
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 16, top: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.75,
+          ),
+          decoration: BoxDecoration(
+            color: isUser ? const Color(0xFF81D4FA) : Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: const Radius.circular(24),
+              topRight: const Radius.circular(24),
+              bottomLeft: isUser ? const Radius.circular(24) : const Radius.circular(8),
+              bottomRight: isUser ? const Radius.circular(8) : const Radius.circular(24),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Text(
+            message.text,
+            style: TextStyle(
+              fontSize: 18,
+              color: isUser ? Colors.white : const Color(0xFF424242),
+              height: 1.4,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LoadingBubble extends StatelessWidget {
+  const _LoadingBubble();
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16, top: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
+            bottomLeft: Radius.circular(8),
+            bottomRight: Radius.circular(24),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: const _TypingIndicator(),
+      ),
+    );
+  }
+}
+
+class _TypingIndicator extends StatefulWidget {
+  const _TypingIndicator();
+
+  @override
+  State<_TypingIndicator> createState() => _TypingIndicatorState();
+}
+
+class _TypingIndicatorState extends State<_TypingIndicator>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Widget _buildDot(int index) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final delay = index * 0.2;
+        var value = (_controller.value - delay) % 1.0;
+        if (value < 0) value += 1.0;
+
+        final offset = (value < 0.5) 
+            ? Curves.easeInOutSine.transform(value * 2) * -6.0 
+            : Curves.easeInOutSine.transform((1.0 - value) * 2) * -6.0;
+
+        return Transform.translate(
+          offset: Offset(0, offset),
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 2.5),
+            width: 8,
+            height: 8,
+            decoration: const BoxDecoration(
+              color: Color(0xFFBDBDBD),
+              shape: BoxShape.circle,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 24, // Set a fixed height for bounding box
+      alignment: Alignment.center,
+      child: Row(
+        mainAxisSize: MainAxisSize.min, // Prevents horizontal stretching
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _buildDot(0),
+          _buildDot(1),
+          _buildDot(2),
+        ],
+      ),
+    );
+  }
+}
+
+
 class _GreetingBody extends StatelessWidget {
   const _GreetingBody();
 
@@ -94,18 +284,46 @@ class _GreetingBody extends StatelessWidget {
   }
 }
 
-class _ChatInputArea extends StatelessWidget {
+class _ChatInputArea extends StatefulWidget {
   const _ChatInputArea();
+
+  @override
+  State<_ChatInputArea> createState() => _ChatInputAreaState();
+}
+
+class _ChatInputAreaState extends State<_ChatInputArea> {
+  final TextEditingController _controller = TextEditingController();
+  bool _isActive = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.addListener(() {
+      final isActive = _controller.text.trim().isNotEmpty;
+      if (isActive != _isActive) {
+        setState(() {
+          _isActive = isActive;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _handleSend(ChatViewModel viewModel) {
+    if (_isActive) {
+      viewModel.sendMessage(_controller.text);
+      _controller.clear();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final viewModel = context.watch<ChatViewModel>();
-    final controller = TextEditingController.fromValue(
-      TextEditingValue(
-        text: viewModel.inputText,
-        selection: TextSelection.collapsed(offset: viewModel.inputText.length),
-      ),
-    );
 
     return Padding(
       padding: const EdgeInsets.all(24.0),
@@ -126,8 +344,8 @@ class _ChatInputArea extends StatelessWidget {
           children: [
             Expanded(
               child: TextField(
-                controller: controller,
-                onChanged: viewModel.updateInputText,
+                controller: _controller,
+                onSubmitted: (_) => _handleSend(viewModel),
                 decoration: const InputDecoration(
                   hintText: "메세지를 입력해주세요...",
                   border: InputBorder.none,
@@ -138,8 +356,8 @@ class _ChatInputArea extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             _SendButton(
-              isActive: viewModel.inputText.trim().isNotEmpty,
-              onTap: viewModel.sendMessage,
+              isActive: _isActive,
+              onTap: () => _handleSend(viewModel),
             ),
           ],
         ),
@@ -156,8 +374,9 @@ class _SendButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Always color the button as per user's previous preference, but only trigger action if active.
     return GestureDetector(
-      onTap: isActive ? onTap : null,
+      onTap: onTap, 
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOutCubic,
@@ -187,7 +406,6 @@ class _ChatDrawer extends StatelessWidget {
       child: SafeArea(
         child: Column(
           children: [
-            // 위쪽 절반: 메뉴 버튼들
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.all(24.0),
@@ -208,9 +426,7 @@ class _ChatDrawer extends StatelessWidget {
                       label: '새로운 이야기 시작하기',
                       backgroundColor: const Color(0xFF81D4FA).withValues(alpha: 0.2),
                       iconColor: const Color(0xFF81D4FA),
-                      onTap: () {
-                        // TODO: 새 채팅 로직
-                      },
+                      onTap: () {},
                     ),
                     const SizedBox(height: 16),
                     _DrawerButton(
@@ -218,15 +434,12 @@ class _ChatDrawer extends StatelessWidget {
                       label: '이전 이야기 찾기',
                       backgroundColor: const Color(0xFFFFD54F).withValues(alpha: 0.2),
                       iconColor: const Color(0xFFFFB300),
-                      onTap: () {
-                        // TODO: 검색 로직
-                      },
+                      onTap: () {},
                     ),
                   ],
                 ),
               ),
             ),
-            // 아래쪽 절반: 최근 채팅 목록
             Expanded(
               child: Container(
                 decoration: const BoxDecoration(
@@ -253,16 +466,17 @@ class _ChatDrawer extends StatelessWidget {
                     Expanded(
                       child: Consumer<ChatViewModel>(
                         builder: (context, viewModel, child) {
+                          final userMessages = viewModel.chatHistory.where((m) => m.isUser).toList();
                           return ListView.builder(
                             padding: const EdgeInsets.symmetric(horizontal: 16),
-                            itemCount: viewModel.chatHistory.length,
+                            itemCount: userMessages.length,
                             itemBuilder: (context, index) {
-                              final session = viewModel.chatHistory[index];
+                              final message = userMessages[index];
                               return _HistoryItem(
-                                title: session.title,
-                                onTap: () {
-                                  // TODO: 해당 채팅으로 이동
-                                },
+                                title: message.text.length > 15 
+                                    ? '${message.text.substring(0, 15)}...' 
+                                    : message.text,
+                                onTap: () {},
                               );
                             },
                           );
