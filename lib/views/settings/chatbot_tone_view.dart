@@ -31,9 +31,7 @@ class ChatbotToneView extends StatelessWidget {
             onPressed: () => Navigator.pop(context),
           ),
         ),
-        body: const SafeArea(
-          child: _ChatbotToneContent(),
-        ),
+        body: const SafeArea(child: _ChatbotToneContent()),
       ),
     );
   }
@@ -60,37 +58,54 @@ class _ChatbotToneContent extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
-          _ToneSliderCard(
-            title: '어휘',
-            icon: Icons.menu_book_rounded,
-            leftLabel: '쉬운말',
-            rightLabel: '어려운 말',
-            value: viewModel.vocabularyLevel,
-            cardColor: const Color(0xFFFFE5EC),
-            accentColor: const Color(0xFFF06292),
-            onChanged: viewModel.updateVocabularyLevel,
-          ),
-          const SizedBox(height: 20),
-          _ToneSliderCard(
-            title: '말투',
-            icon: Icons.sentiment_satisfied_alt_rounded,
-            leftLabel: '친근함',
-            rightLabel: '선생님',
-            value: viewModel.toneLevel,
-            cardColor: const Color(0xFFE8F5E9),
-            accentColor: const Color(0xFF66BB6A),
-            onChanged: viewModel.updateToneLevel,
-          ),
-          const SizedBox(height: 20),
-          _ToneSliderCard(
-            title: '방향',
-            icon: Icons.explore_rounded,
-            leftLabel: '공감',
-            rightLabel: '지식',
-            value: viewModel.focusLevel,
-            cardColor: const Color(0xFFE3F2FD),
-            accentColor: const Color(0xFF42A5F5),
-            onChanged: viewModel.updateFocusLevel,
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: ShapeDecoration(
+              color: Colors.white,
+              shape: ContinuousRectangleBorder(
+                borderRadius: BorderRadius.circular(48),
+              ),
+              shadows: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 14,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                _ToneSliderCard(
+                  title: '어휘',
+                  icon: Icons.menu_book_rounded,
+                  leftLabel: '쉬운 말',
+                  rightLabel: '어려운 말',
+                  value: viewModel.vocabularyLevel,
+                  accentColor: const Color(0xFFF06292),
+                  onChanged: viewModel.updateVocabularyLevel,
+                ),
+                const SizedBox(height: 32),
+                _ToneSliderCard(
+                  title: '말투',
+                  icon: Icons.sentiment_satisfied_alt_rounded,
+                  leftLabel: '친근함',
+                  rightLabel: '선생님',
+                  value: viewModel.toneLevel,
+                  accentColor: const Color(0xFF66BB6A),
+                  onChanged: viewModel.updateToneLevel,
+                ),
+                const SizedBox(height: 32),
+                _ToneSliderCard(
+                  title: '방향',
+                  icon: Icons.explore_rounded,
+                  leftLabel: '공감',
+                  rightLabel: '지식',
+                  value: viewModel.focusLevel,
+                  accentColor: const Color(0xFF42A5F5),
+                  onChanged: viewModel.updateFocusLevel,
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 24),
         ],
@@ -105,7 +120,6 @@ class _ToneSliderCard extends StatelessWidget {
   final String leftLabel;
   final String rightLabel;
   final int value;
-  final Color cardColor;
   final Color accentColor;
   final ValueChanged<double> onChanged;
 
@@ -115,46 +129,25 @@ class _ToneSliderCard extends StatelessWidget {
     required this.leftLabel,
     required this.rightLabel,
     required this.value,
-    required this.cardColor,
     required this.accentColor,
     required this.onChanged,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: ShapeDecoration(
-        color: cardColor,
-        shape: ContinuousRectangleBorder(
-          borderRadius: BorderRadius.circular(48),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _CardHeader(title: title, icon: icon, accentColor: accentColor),
+        const SizedBox(height: 20),
+        _SliderSection(
+          value: value,
+          accentColor: accentColor,
+          leftLabel: leftLabel,
+          rightLabel: rightLabel,
+          onChanged: onChanged,
         ),
-        shadows: [
-          BoxShadow(
-            color: cardColor.withOpacity(0.6),
-            blurRadius: 14,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _CardHeader(
-            title: title,
-            icon: icon,
-            accentColor: accentColor,
-          ),
-          const SizedBox(height: 20),
-          _SliderSection(
-            value: value,
-            accentColor: accentColor,
-            leftLabel: leftLabel,
-            rightLabel: rightLabel,
-            onChanged: onChanged,
-          ),
-        ],
-      ),
+      ],
     );
   }
 }
@@ -176,8 +169,8 @@ class _CardHeader extends StatelessWidget {
       children: [
         Container(
           padding: const EdgeInsets.all(10),
-          decoration: const BoxDecoration(
-            color: Colors.white,
+          decoration: BoxDecoration(
+            color: accentColor.withOpacity(0.1),
             shape: BoxShape.circle,
           ),
           child: Icon(icon, color: accentColor, size: 24),
@@ -220,7 +213,7 @@ class _SliderSection extends StatelessWidget {
         SliderTheme(
           data: SliderTheme.of(context).copyWith(
             activeTrackColor: accentColor,
-            inactiveTrackColor: Colors.white70,
+            inactiveTrackColor: accentColor.withOpacity(0.2),
             thumbColor: accentColor,
             overlayColor: accentColor.withOpacity(0.2),
             trackHeight: 8.0,
