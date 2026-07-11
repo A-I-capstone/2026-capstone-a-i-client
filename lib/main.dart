@@ -1,14 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'viewmodels/chat_view_model.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'core/storage/secure_storage_impl.dart';
+import 'repositories/chat_repository.dart';
+import 'viewmodels/chat/chat_viewmodel.dart';
 import 'viewmodels/settings/font_size_viewmodel.dart';
 import 'views/chat/chat_view.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: 'assets/config/.env');
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => ChatViewModel()),
+        ChangeNotifierProvider(
+          create: (_) {
+            final storage = const SecureStorageImpl();
+            final repository = ChatRepository(storage: storage);
+            return ChatViewModel(chatRepository: repository);
+          },
+        ),
         ChangeNotifierProvider(create: (_) => FontSizeViewModel()),
       ],
       child: const CapstoneAiApp(),
