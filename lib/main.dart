@@ -18,6 +18,22 @@ void main() async {
           },
         ),
         ChangeNotifierProvider(create: (_) => FontSizeViewModel()),
+            final storage = const SecureStorageImpl();
+            final repository = ChatRepository(storage: storage);
+            return ChatViewModel(chatRepository: repository);
+          },
+        ),
+<<<<<<< HEAD
+        ChangeNotifierProvider(
+          create: (_) {
+            final storage = const SecureStorageImpl();
+            final repository = ChatRepository(storage: storage);
+            return ChatViewModel(chatRepository: repository);
+          },
+        ),
+=======
+>>>>>>> 8ea63f1555afd4c299eaf9ad98ddc4f4664b3ed1
+        ChangeNotifierProvider(create: (_) => FontSizeViewModel()),
       ],
       child: const CapstoneAiApp(),
     ),
