@@ -35,6 +35,12 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   provider: ^6.1.5+1
+  flutter_dotenv: ^6.0.1
+  flutter_secure_storage: ^10.3.1
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  encrypt: ^5.0.3
+  google_generative_ai: ^0.4.7
 
 dev_dependencies:
   flutter_test:
@@ -46,6 +52,8 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  hive_generator: ^2.0.1
+  build_runner: ^2.4.13
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -55,8 +63,12 @@ flutter:
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
-  # the material Icons class.
   uses-material-design: true
+
+  assets:
+    - prompts/system_prompt.md
+    - assets/config/.env
+
 
   # To add assets to your application, add an assets section, like this:
   # assets:

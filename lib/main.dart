@@ -1,8 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-void main() {
-  runApp(MultiProvider(providers: [], child: const CapstoneAiApp()));
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: 'assets/config/.env');
+  runApp(
+    MultiProvider(providers: [], child: const CapstoneAiApp()),
+    /* // Legacy code
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (_) {
+            final storage = const SecureStorageImpl();
+            final repository = ChatRepository(storage: storage);
+            return ChatViewModel(chatRepository: repository);
+          },
+        ),
+        ChangeNotifierProvider(create: (_) => FontSizeViewModel()),
+      ],
+      child: const CapstoneAiApp(),
+    ),
+  );
+  */
+  );
 }
 
 class CapstoneAiApp extends StatelessWidget {
