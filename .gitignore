@@ -6,8 +6,10 @@
 *.swp
 .buildlog/
 .history
+.env
+assets/config/.env
 
-
+assets/config/.env
 
 # Flutter repo-specific
 /bin/cache/
