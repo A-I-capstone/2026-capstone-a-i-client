@@ -41,6 +41,13 @@ dependencies:
   hive_flutter: ^1.1.0
   encrypt: ^5.0.3
   google_generative_ai: ^0.4.7
+  firebase_core: ^4.12.1
+  firebase_ai: ^3.14.1
+  firebase_app_check: ^0.4.5+2
+  firebase_remote_config: ^6.5.5
+  firebase_auth: ^6.5.5
+  cloud_firestore: ^6.4.1
+  shared_preferences: ^2.5.5
 
 dev_dependencies:
   flutter_test:
@@ -67,7 +74,6 @@ flutter:
 
   assets:
     - prompts/system_prompt.md
-    - assets/config/.env
 
 
   # To add assets to your application, add an assets section, like this:
