@@ -75,8 +75,6 @@ void main() async {
   final BaseChatRepository repository = FirestoreChatRepository();
 
   runApp(
-    MultiProvider(providers: [], child: const CapstoneAiApp()),
-    /* // Legacy code
     MultiProvider(
       providers: [
         ChangeNotifierProvider(
@@ -85,14 +83,9 @@ void main() async {
             repository: repository,
           ),
         ),
-=======
->>>>>>> 8ea63f1555afd4c299eaf9ad98ddc4f4664b3ed1
-        ChangeNotifierProvider(create: (_) => FontSizeViewModel()),
       ],
       child: const CapstoneAiApp(),
     ),
-  );
-  */
   );
 }
 
