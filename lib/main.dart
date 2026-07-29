@@ -5,40 +5,22 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: 'assets/config/.env');
+
+  // BaseChatRepository typed — swap to a different backend by changing this
+  // single line without touching ViewModel or View code.
+  final BaseChatRepository repository = FirestoreChatRepository();
+
   runApp(
-    MultiProvider(providers: [], child: const CapstoneAiApp()),
-    /* // Legacy code
     MultiProvider(
       providers: [
         ChangeNotifierProvider(
-          create: (_) {
-            final storage = const SecureStorageImpl();
-            final repository = ChatRepository(storage: storage);
-            return ChatViewModel(chatRepository: repository);
-          },
+          create: (_) => ChatViewModel(
+            repository: repository,
+          ),
         ),
-        ChangeNotifierProvider(create: (_) => FontSizeViewModel()),
-            final storage = const SecureStorageImpl();
-            final repository = ChatRepository(storage: storage);
-            return ChatViewModel(chatRepository: repository);
-          },
-        ),
-<<<<<<< HEAD
-        ChangeNotifierProvider(
-          create: (_) {
-            final storage = const SecureStorageImpl();
-            final repository = ChatRepository(storage: storage);
-            return ChatViewModel(chatRepository: repository);
-          },
-        ),
-=======
->>>>>>> 8ea63f1555afd4c299eaf9ad98ddc4f4664b3ed1
-        ChangeNotifierProvider(create: (_) => FontSizeViewModel()),
       ],
       child: const CapstoneAiApp(),
     ),
-  );
-  */
   );
 }
 
