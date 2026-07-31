@@ -36,4 +36,11 @@ abstract class BaseChatRepository {
   /// Fails silently on error — callers should not rely on a return value for
   /// success confirmation.
   Future<void> deleteChat(String userId, String chatId);
+
+  /// Updates the title of the chat document for [userId] and [chatId].
+  Future<void> updateChatTitle(
+    String userId,
+    String chatId,
+    String newTitle,
+  );
 }

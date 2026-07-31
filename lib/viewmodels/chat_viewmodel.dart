@@ -144,6 +144,8 @@ class ChatViewModel extends ChangeNotifier {
     final trimmedText = text.trim();
     if (trimmedText.isEmpty) return;
 
+    final isFirstMessage = _messages.isEmpty;
+
     // 1. Build the user message.
     final userMsg = ChatMessage(
       id: 'user_${DateTime.now().millisecondsSinceEpoch}',
@@ -162,6 +164,10 @@ class ChatViewModel extends ChangeNotifier {
 
     // 3. Persist the user message in the background — do not await.
     unawaited(_repository.saveMessage(_userId, _chatId, userMsg));
+
+    if (isFirstMessage) {
+      unawaited(_generateAndSetChatTitle(trimmedText));
+    }
 
     try {
       // 4. Stream the AI response, passing the current history window.
@@ -203,6 +209,23 @@ class ChatViewModel extends ChangeNotifier {
       _isLoading = false;
       _isStreaming = false;
       notifyListeners();
+    }
+  }
+
+  Future<void> _generateAndSetChatTitle(String firstMessage) async {
+    try {
+      final generatedTitle = await _providerManager.generateTitle(firstMessage);
+      if (generatedTitle.isNotEmpty) {
+        await _repository.updateChatTitle(
+          _userId,
+          _chatId,
+          generatedTitle,
+        );
+        // Refresh the local drawer list in the background
+        unawaited(loadChatSessions());
+      }
+    } catch (e) {
+      debugPrint('[Title Gen] error: $e');
     }
   }
 
