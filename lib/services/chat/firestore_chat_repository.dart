@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../models/chat_message.dart';
+import '../../models/chat_session.dart';
 import 'base_chat_repository.dart';
 
 /// Concrete [BaseChatRepository] that communicates directly with
@@ -21,11 +22,9 @@ class FirestoreChatRepository implements BaseChatRepository {
   final FirebaseAuth _auth;
   final FirebaseFirestore _firestore;
 
-  FirestoreChatRepository({
-    FirebaseAuth? auth,
-    FirebaseFirestore? firestore,
-  })  : _auth = auth ?? FirebaseAuth.instance,
-        _firestore = firestore ?? FirebaseFirestore.instance;
+  FirestoreChatRepository({FirebaseAuth? auth, FirebaseFirestore? firestore})
+    : _auth = auth ?? FirebaseAuth.instance,
+      _firestore = firestore ?? FirebaseFirestore.instance;
 
   // ---------------------------------------------------------------------------
   // BaseChatRepository implementation
@@ -69,8 +68,7 @@ class FirestoreChatRepository implements BaseChatRepository {
   }
 
   @override
-  Future<List<ChatMessage>> loadMessages(
-      String userId, String chatId) async {
+  Future<List<ChatMessage>> loadMessages(String userId, String chatId) async {
     try {
       final snapshot = await _firestore
           .collection('users')
@@ -92,7 +90,10 @@ class FirestoreChatRepository implements BaseChatRepository {
 
   @override
   Future<void> saveMessage(
-      String userId, String chatId, ChatMessage message) async {
+    String userId,
+    String chatId,
+    ChatMessage message,
+  ) async {
     try {
       final messagesRef = _firestore
           .collection('users')
@@ -113,6 +114,31 @@ class FirestoreChatRepository implements BaseChatRepository {
     } catch (e, st) {
       debugPrint('[FirestoreChatRepository] saveMessage error: $e\n$st');
       // Intentionally swallowed — caller uses unawaited fire-and-forget.
+    }
+  }
+
+  @override
+  Future<List<ChatSession>> listChats(String userId) async {
+    try {
+      final snapshot = await _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('chats')
+          .orderBy('updatedAt', descending: true)
+          .get();
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        final updatedAt =
+            (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now();
+        return ChatSession(
+          id: doc.id,
+          title: (data['title'] as String?) ?? '새 대화',
+          updatedAt: updatedAt,
+        );
+      }).toList();
+    } catch (e, st) {
+      debugPrint('[FirestoreChatRepository] listChats error: $e\n$st');
+      return [];
     }
   }
 }
