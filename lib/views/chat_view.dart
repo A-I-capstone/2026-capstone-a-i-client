@@ -9,8 +9,22 @@ import '../widgets/chat/chat_bubble.dart';
 import '../widgets/chat/chat_input_bar.dart';
 
 /// Main Chat Screen (View layer)
-class ChatView extends StatelessWidget {
+class ChatView extends StatefulWidget {
   const ChatView({super.key});
+  @override
+  State<ChatView> createState() => _ChatViewState();
+}
+
+class _ChatViewState extends State<ChatView> {
+  @override
+  void initState() {
+    super.initState();
+    // Schedule after the first frame so context.read is safe to call.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      debugPrint('[View] initState → initialize() 호출');
+      context.read<ChatViewModel>().initialize();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,7 +65,11 @@ class _ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
             isCircle: true,
             backgroundColor: Colors.transparent,
             padding: const EdgeInsets.all(8),
-            icon: const Icon(Icons.menu_rounded, color: AppColors.ink, size: 32),
+            icon: const Icon(
+              Icons.menu_rounded,
+              color: AppColors.ink,
+              size: 32,
+            ),
             onTap: () => Scaffold.of(drawerContext).openDrawer(),
           ),
         ),
@@ -64,7 +82,11 @@ class _ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
               isCircle: true,
               backgroundColor: Colors.transparent,
               padding: const EdgeInsets.all(8),
-              icon: const Icon(Icons.star_rounded, color: AppColors.ink, size: 32),
+              icon: const Icon(
+                Icons.star_rounded,
+                color: AppColors.ink,
+                size: 32,
+              ),
               onTap: () {},
             ),
           ),
