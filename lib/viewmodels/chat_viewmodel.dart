@@ -205,7 +205,7 @@ class ChatViewModel extends ChangeNotifier {
     notifyListeners();
 
     // 3. Persist the user message in the background — do not await.
-    unawaited(_repository.saveMessage(_userId, _chatId, userMsg));
+    unawaited(_repository.saveMessage(_userId, _profileId, _chatId, userMsg));
 
     if (isFirstMessage) {
       unawaited(_generateAndSetChatTitle(trimmedText));
