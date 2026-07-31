@@ -253,7 +253,7 @@ class ChatViewModel extends ChangeNotifier {
       final sessions = await _repository.listChats(_userId);
       _chatSessions
         ..clear()
-        ..addAll(sessions);
+        ..addAll(sessions.where((s) => !(s.id == _chatId && s.messageCount == 0)));
     } catch (_) {
       // Fail silently — drawer shows an empty list instead of an error.
     } finally {

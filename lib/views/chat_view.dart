@@ -316,7 +316,7 @@ class _ChatSessionTile extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        _formatDate(session.updatedAt),
+                        '${_formatDate(session.updatedAt)} • 대화 ${session.messageCount}개',
                         style: AppTypography.bodyMedium.copyWith(
                           fontSize: 13,
                           color: AppColors.slate,
