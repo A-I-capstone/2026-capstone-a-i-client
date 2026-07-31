@@ -28,9 +28,9 @@ class ChatViewModel extends ChangeNotifier {
     required ProviderManager providerManager,
     required BaseChatRepository repository,
     required ProfileViewModel profileViewModel,
-  })  : _providerManager = providerManager,
-        _repository = repository,
-        _profileViewModel = profileViewModel;
+  }) : _providerManager = providerManager,
+       _repository = repository,
+       _profileViewModel = profileViewModel;
 
   // ---------------------------------------------------------------------------
   // State
@@ -131,7 +131,11 @@ class ChatViewModel extends ChangeNotifier {
       _chatId = await _repository.createChat(_userId, _profileId);
 
       // 3. Load full message history for this chat (empty for a new chatId).
-      final loaded = await _repository.loadMessages(_userId, _profileId, _chatId);
+      final loaded = await _repository.loadMessages(
+        _userId,
+        _profileId,
+        _chatId,
+      );
       _messages
         ..clear()
         ..addAll(loaded);
@@ -199,9 +203,7 @@ class ChatViewModel extends ChangeNotifier {
     notifyListeners();
 
     // 3. Persist the user message in the background — do not await.
-    unawaited(
-      _repository.saveMessage(_userId, _profileId, _chatId, userMsg),
-    );
+    unawaited(_repository.saveMessage(_userId, _profileId, _chatId, userMsg));
 
     try {
       // 4. Stream the AI response, passing the current history window.
@@ -225,9 +227,7 @@ class ChatViewModel extends ChangeNotifier {
       _addToHistoryWindow(aiMsg);
 
       // 6. Persist the AI message in the background — do not await.
-      unawaited(
-        _repository.saveMessage(_userId, _profileId, _chatId, aiMsg),
-      );
+      unawaited(_repository.saveMessage(_userId, _profileId, _chatId, aiMsg));
     } catch (_) {
       // 7. On any error: discard all received tokens and show a child-friendly
       //    fallback. Never surface technical error messages to the child.
@@ -326,7 +326,9 @@ class ChatViewModel extends ChangeNotifier {
       final sessions = await _repository.listChats(_userId, _profileId);
       _chatSessions
         ..clear()
-        ..addAll(sessions.where((s) => !(s.id == _chatId && s.messageCount == 0)));
+        ..addAll(
+          sessions.where((s) => !(s.id == _chatId && s.messageCount == 0)),
+        );
     } catch (_) {
       // Fail silently — drawer shows an empty list instead of an error.
     } finally {
@@ -346,7 +348,11 @@ class ChatViewModel extends ChangeNotifier {
 
     try {
       _chatId = sessionId;
-      final loaded = await _repository.loadMessages(_userId, _chatId);
+      final loaded = await _repository.loadMessages(
+        _userId,
+        _profileId,
+        _chatId,
+      );
       _messages
         ..clear()
         ..addAll(loaded);
@@ -377,9 +383,7 @@ class ChatViewModel extends ChangeNotifier {
   /// the UI. Fails silently on error.
   Future<void> _deleteEmptyChats({required List<String> exceptions}) async {
     if (_profileId.isEmpty) return;
-    debugPrint(
-      '[ViewModel] _deleteEmptyChats() 호출됨 (exceptions: $exceptions)',
-    );
+    debugPrint('[ViewModel] _deleteEmptyChats() 호출됨 (exceptions: $exceptions)');
     try {
       final allSessions = await _repository.listChats(_userId, _profileId);
       final toDelete = allSessions
@@ -389,9 +393,7 @@ class ChatViewModel extends ChangeNotifier {
         debugPrint('[ViewModel] _deleteEmptyChats() 삭제 대상 없음');
         return;
       }
-      debugPrint(
-        '[ViewModel] _deleteEmptyChats() 삭제 대상 ${toDelete.length}개:',
-      );
+      debugPrint('[ViewModel] _deleteEmptyChats() 삭제 대상 ${toDelete.length}개:');
       for (final session in toDelete) {
         debugPrint('[ViewModel]   - 빈 채팅 삭제: ${session.id}');
         unawaited(_repository.deleteChat(_userId, _profileId, session.id));
