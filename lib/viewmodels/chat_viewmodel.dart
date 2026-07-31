@@ -324,13 +324,24 @@ class ChatViewModel extends ChangeNotifier {
     notifyListeners();
     try {
       final sessions = await _repository.listChats(_userId, _profileId);
+      debugPrint(
+        '[ChatViewModel] loadChatSessions() 전체 DB 세션 수: ${sessions.length} (현재 _chatId: $_chatId)',
+      );
+      for (final s in sessions) {
+        debugPrint(
+          '[ChatViewModel]   - session(id: ${s.id}, messageCount: ${s.messageCount})',
+        );
+      }
       _chatSessions
         ..clear()
         ..addAll(
           sessions.where((s) => !(s.id == _chatId && s.messageCount == 0)),
         );
-    } catch (_) {
-      // Fail silently — drawer shows an empty list instead of an error.
+      debugPrint(
+        '[ChatViewModel] loadChatSessions() 필터링 후 서랍(Drawer) 노출 세션 수: ${_chatSessions.length}',
+      );
+    } catch (e) {
+      debugPrint('[ChatViewModel] loadChatSessions() 오류: $e');
     } finally {
       _isLoadingSessions = false;
       notifyListeners();
@@ -342,6 +353,12 @@ class ChatViewModel extends ChangeNotifier {
   Future<void> loadChat(String sessionId) async {
     if (_userId.isEmpty || sessionId.isEmpty) return;
     if (_chatId == sessionId) return;
+
+    final previousChatId = _chatId;
+    final previousWasEmpty = _messages.isEmpty;
+    debugPrint(
+      '[ChatViewModel] loadChat() 호출됨: 이전 _chatId = $previousChatId (isEmpty: $previousWasEmpty) -> 이동할 sessionId = $sessionId',
+    );
 
     _isLoading = true;
     notifyListeners();
@@ -364,8 +381,16 @@ class ChatViewModel extends ChangeNotifier {
               ? _messages.sublist(_messages.length - _historyWindowSize)
               : List.of(_messages),
         );
-    } catch (_) {
-      debugPrint('[ChatViewModel] loadChat() failed.');
+      debugPrint(
+        '[ChatViewModel] loadChat() 완료: 불러온 메시지 수 = ${loaded.length}',
+      );
+
+      // 이전 채팅방이 비어있었다면 백그라운드 정리를 수행 (현재 이동한 채팅방은 예외 처리)
+      if (previousWasEmpty) {
+        unawaited(_deleteEmptyChats(exceptions: [_chatId]));
+      }
+    } catch (e) {
+      debugPrint('[ChatViewModel] loadChat() failed: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
