@@ -46,6 +46,7 @@ dependencies:
   firebase_auth: ^6.5.5
   cloud_firestore: ^6.4.1
   shared_preferences: ^2.5.5
+  flutter_tts: ^4.2.2
 
 dev_dependencies:
   flutter_test:
@@ -71,7 +72,7 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets
+    - assets/
     - prompts/system_prompt.md
 
 
@@ -100,13 +101,6 @@ flutter:
         - asset: assets/fonts/NanumFontSetup_TTF_GOTHIC/NanumGothicBold.ttf
           weight: 700
         - asset: assets/fonts/NanumFontSetup_TTF_GOTHIC/NanumGothicExtraBold.ttf
-          weight: 800
-    - family: NanumMyeongjo
-      fonts:
-        - asset: assets/fonts/NanumFontSetup_TTF_MYUNGJO/NanumMyeongjo.ttf
-        - asset: assets/fonts/NanumFontSetup_TTF_MYUNGJO/NanumMyeongjoBold.ttf
-          weight: 700
-        - asset: assets/fonts/NanumFontSetup_TTF_MYUNGJO/NanumMyeongjoExtraBold.ttf
           weight: 800
     - family: NanumSquare
       fonts:

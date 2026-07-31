@@ -85,10 +85,18 @@ void main() async {
   // ProfileViewModel is created first so it can be passed into ChatViewModel.
   final profileViewModel = ProfileViewModel(repository: profileRepository);
 
+  // SettingsViewModel is initialised before runApp so that persisted settings
+  // (font, text size, TTS voice) are ready before the first frame is drawn.
+  final settingsViewModel = SettingsViewModel();
+  await settingsViewModel.init();
+
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider<ProfileViewModel>.value(value: profileViewModel),
+        ChangeNotifierProvider<SettingsViewModel>.value(
+          value: settingsViewModel,
+        ),
         ChangeNotifierProvider(
           create: (_) => ChatViewModel(
             providerManager: providerManager,
@@ -96,7 +104,6 @@ void main() async {
             profileViewModel: profileViewModel,
           ),
         ),
-        ChangeNotifierProvider(create: (_) => SettingsViewModel()),
       ],
       child: const CapstoneAiApp(),
     ),
@@ -108,10 +115,26 @@ class CapstoneAiApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final settings = context.watch<SettingsViewModel>();
+
     return MaterialApp(
       title: 'Capstone AI Client',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
+      theme: AppTheme.buildTheme(
+        fontFamily: settings.fontFamily,
+        isBold: settings.isBold,
+      ),
+      // Override textScaler for all descendants so the font-size slider
+      // affects every text widget in the app without individual wiring.
+      builder: (context, child) {
+        final scale = settings.textSize / SettingsViewModel.defaultTextSize;
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(
+            textScaler: TextScaler.linear(scale),
+          ),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
       home: const ChatView(),
     );
   }
