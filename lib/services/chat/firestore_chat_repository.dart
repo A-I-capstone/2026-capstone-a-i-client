@@ -141,4 +141,36 @@ class FirestoreChatRepository implements BaseChatRepository {
       return [];
     }
   }
+
+  @override
+  Future<void> deleteChat(String userId, String chatId) async {
+    debugPrint(
+      '[Firestore] deleteChat() 호출됨 (userId: $userId, chatId: $chatId)',
+    );
+    try {
+      final chatRef = _firestore
+          .collection('users')
+          .doc(userId)
+          .collection('chats')
+          .doc(chatId);
+      // Firestore does not automatically delete subcollections when a document
+      // is deleted, so we must delete all messages first.
+      final messagesSnapshot = await chatRef.collection('messages').get();
+      debugPrint(
+        '[Firestore] deleteChat() → messages 서브컬렉션 ${messagesSnapshot.docs.length}개 삭제 중',
+      );
+      final batch = _firestore.batch();
+      for (final doc in messagesSnapshot.docs) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+      debugPrint('[Firestore] deleteChat() → messages 서브컬렉션 삭제 완료');
+      // Now delete the parent chat document itself.
+      await chatRef.delete();
+      debugPrint('[Firestore] deleteChat() 완료 → chatId: $chatId 삭제됨');
+    } catch (e, st) {
+      debugPrint('[Firestore] deleteChat() 오류: $e\n$st');
+      // Intentionally swallowed — callers treat this as fire-and-forget.
+    }
+  }
 }
