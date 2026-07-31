@@ -292,7 +292,10 @@ class _ChatSessionTile extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: () {},
+          onTap: () {
+            Navigator.of(context).pop();
+            context.read<ChatViewModel>().loadChat(session.id);
+          },
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
             decoration: BoxDecoration(
