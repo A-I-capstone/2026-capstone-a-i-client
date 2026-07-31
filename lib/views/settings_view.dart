@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
+import '../viewmodels/profile_viewmodel.dart';
 import '../viewmodels/settings_viewmodel.dart';
-import '../widgets/bouncy_button.dart';
+import 'profile_select_view.dart';
+
 
 class SettingsView extends StatelessWidget {
   const SettingsView({super.key});
@@ -83,36 +85,44 @@ class _AccountSection extends StatelessWidget {
   const _AccountSection();
   @override
   Widget build(BuildContext context) {
-    return _SettingsCard(
-      title: '계정 관리',
-      child: Row(
-        children: [
-          const CircleAvatar(
-            radius: 28,
-            backgroundColor: AppColors.saffron,
-            child: Icon(Icons.person_rounded, size: 32, color: AppColors.ink),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('내 친구', style: AppTypography.headlineMedium),
-                Text(
-                  '프로필 변경하기',
-                  style: AppTypography.bodyMedium.copyWith(
-                    color: AppColors.slate,
-                  ),
-                ),
-              ],
+    final activeProfile = context.watch<ProfileViewModel>().activeProfile;
+    final profileName = activeProfile?.name ?? '내 친구';
+
+    return GestureDetector(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const ProfileSelectView()),
+      ),
+      child: _SettingsCard(
+        title: '계정 관리',
+        child: Row(
+          children: [
+            const CircleAvatar(
+              radius: 28,
+              backgroundColor: AppColors.saffron,
+              child: Icon(Icons.person_rounded, size: 32, color: AppColors.ink),
             ),
-          ),
-          const Icon(
-            Icons.chevron_right_rounded,
-            color: AppColors.ink,
-            size: 32,
-          ),
-        ],
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(profileName, style: AppTypography.headlineMedium),
+                  Text(
+                    '프로필 변경하기',
+                    style: AppTypography.bodyMedium.copyWith(
+                      color: AppColors.slate,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: AppColors.ink,
+              size: 32,
+            ),
+          ],
+        ),
       ),
     );
   }
