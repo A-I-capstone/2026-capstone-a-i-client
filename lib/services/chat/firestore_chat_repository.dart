@@ -190,16 +190,15 @@ class FirestoreChatRepository implements BaseChatRepository {
   @override
   Future<void> updateChatTitle(
     String userId,
+    String profileId,
     String chatId,
     String newTitle,
   ) async {
     try {
-      await _firestore
-          .collection('users')
-          .doc(userId)
-          .collection('chats')
-          .doc(chatId)
-          .update({'title': newTitle});
+      await _chatsRef(
+        userId,
+        profileId,
+      ).doc(chatId).update({'title': newTitle});
       debugPrint(
         '[Firestore] updateChatTitle() 완료 → chatId: $chatId, title: $newTitle',
       );

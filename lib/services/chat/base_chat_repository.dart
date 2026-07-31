@@ -32,14 +32,14 @@ abstract class BaseChatRepository {
   Future<List<ChatSession>> listChats(String userId);
 
   /// Permanently deletes the chat document and all its messages subcollection
-  /// for the given [userId] / [chatId] pair.
-  /// Fails silently on error — callers should not rely on a return value for
-  /// success confirmation.
-  Future<void> deleteChat(String userId, String chatId);
+  /// for the given [userId] / [profileId] / [chatId] triple.
+  /// Fails silently on error.
+  Future<void> deleteChat(String userId, String profileId, String chatId);
 
-  /// Updates the title of the chat document for [userId] and [chatId].
+  /// Updates the title of the chat document.
   Future<void> updateChatTitle(
     String userId,
+    String profileId,
     String chatId,
     String newTitle,
   );
