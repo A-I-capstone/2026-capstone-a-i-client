@@ -2,13 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'theme/app_theme.dart';
 import 'viewmodels/chat_viewmodel.dart';
+import 'viewmodels/profile_viewmodel.dart';
+import 'viewmodels/settings_viewmodel.dart';
 import 'views/chat_view.dart';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'firebase_options.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'services/chat/base_chat_repository.dart';
 import 'services/chat/firestore_chat_repository.dart';
+import 'services/profile/base_profile_repository.dart';
+import 'services/profile/firestore_profile_repository.dart';
 import 'services/llm/gemini_provider.dart';
 import 'services/llm/provider_manager.dart';
 
@@ -19,8 +24,8 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await FirebaseAppCheck.instance.activate(
-    providerAndroid:
-        AndroidDebugProvider(), // use AndroidPlayIntegrityProvider() for production
+    providerAndroid: AndroidDebugProvider(),
+    providerWeb: WebDebugProvider(),
   );
 
   final remoteConfig = FirebaseRemoteConfig.instance;
@@ -72,17 +77,26 @@ void main() async {
 
   // BaseChatRepository typed — swap to a different backend by changing this
   // single line without touching ViewModel or View code.
-  final BaseChatRepository repository = FirestoreChatRepository();
+  final BaseChatRepository chatRepository = FirestoreChatRepository();
+
+  // BaseProfileRepository typed — same swap-friendly pattern.
+  final BaseProfileRepository profileRepository = FirestoreProfileRepository();
+
+  // ProfileViewModel is created first so it can be passed into ChatViewModel.
+  final profileViewModel = ProfileViewModel(repository: profileRepository);
 
   runApp(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider<ProfileViewModel>.value(value: profileViewModel),
         ChangeNotifierProvider(
           create: (_) => ChatViewModel(
             providerManager: providerManager,
-            repository: repository,
+            repository: chatRepository,
+            profileViewModel: profileViewModel,
           ),
         ),
+        ChangeNotifierProvider(create: (_) => SettingsViewModel()),
       ],
       child: const CapstoneAiApp(),
     ),

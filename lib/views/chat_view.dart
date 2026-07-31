@@ -4,10 +4,12 @@ import '../models/chat_session.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 import '../viewmodels/chat_viewmodel.dart';
+import '../viewmodels/profile_viewmodel.dart';
 import '../widgets/bouncy_button.dart';
 import '../widgets/pulse_loader.dart';
 import '../widgets/chat/chat_bubble.dart';
 import '../widgets/chat/chat_input_bar.dart';
+import 'settings_view.dart';
 
 /// Main Chat Screen (View layer)
 class ChatView extends StatefulWidget {
@@ -21,11 +23,24 @@ class _ChatViewState extends State<ChatView> {
   void initState() {
     super.initState();
     // Schedule after the first frame so context.read is safe to call.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      debugPrint('[View] initState → initialize() 호출');
-      context.read<ChatViewModel>().initialize();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      debugPrint('[View] initState → ProfileViewModel.initialize() 호출');
+      // 1. Sign in and initialise profiles (auto-creates default if needed).
+      final chatVm = context.read<ChatViewModel>();
+      final profileVm = context.read<ProfileViewModel>();
+
+      // Sign in first to get the userId.
+      final userId = await chatVm.signInAndGetUserId();
+
+      // Initialise profiles under that userId.
+      await profileVm.initialize(userId);
+
+      // Then initialise the chat session under the now-active profile.
+      debugPrint('[View] initState → ChatViewModel.initialize() 호출');
+      await chatVm.initialize();
     });
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -146,7 +161,16 @@ class _DrawerTopSection extends StatelessWidget {
                 viewModel.startNewChat();
               },
             ),
-            const _DrawerMenuTile(icon: Icons.settings_outlined, label: '설정'),
+            _DrawerMenuTile(
+              icon: Icons.settings_outlined, 
+              label: '설정',
+              onTap: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const SettingsView()),
+                );
+              },
+            ),
           ],
         ),
       ),
@@ -309,7 +333,7 @@ class _ChatSessionTile extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        _formatDate(session.updatedAt),
+                        '${_formatDate(session.updatedAt)} • 대화 ${session.messageCount}개',
                         style: AppTypography.bodyMedium.copyWith(
                           fontSize: 13,
                           color: AppColors.slate,

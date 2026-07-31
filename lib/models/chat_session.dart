@@ -7,9 +7,13 @@ class ChatSession {
   final String title;
   final DateTime updatedAt;
 
+  /// Total number of messages saved in this session (user + AI combined).
+  /// Written by [FirestoreChatRepository.saveMessage] via FieldValue.increment(1).
+  final int messageCount;
   const ChatSession({
     required this.id,
     required this.title,
     required this.updatedAt,
+    required this.messageCount,
   });
 }
