@@ -252,6 +252,37 @@ class ChatViewModel extends ChangeNotifier {
     }
   }
 
+  /// Loads a specific chat session by ID and makes it the active session.
+  /// Fails silently to keep child-friendly UX.
+  Future<void> loadChat(String sessionId) async {
+    if (_userId.isEmpty || sessionId.isEmpty) return;
+    if (_chatId == sessionId) return;
+
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      _chatId = sessionId;
+      final loaded = await _repository.loadMessages(_userId, _chatId);
+      _messages
+        ..clear()
+        ..addAll(loaded);
+
+      _historyWindow
+        ..clear()
+        ..addAll(
+          _messages.length > _historyWindowSize
+              ? _messages.sublist(_messages.length - _historyWindowSize)
+              : List.of(_messages),
+        );
+    } catch (_) {
+      debugPrint('[ChatViewModel] loadChat() failed.');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
