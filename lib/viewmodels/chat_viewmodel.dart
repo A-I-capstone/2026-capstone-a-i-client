@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../models/chat_message.dart';
+import '../models/chat_session.dart';
 import '../services/chat/base_chat_repository.dart';
 import '../services/llm/provider_manager.dart';
 
@@ -19,8 +20,8 @@ class ChatViewModel extends ChangeNotifier {
   ChatViewModel({
     required ProviderManager providerManager,
     required BaseChatRepository repository,
-  })  : _providerManager = providerManager,
-        _repository = repository;
+  }) : _providerManager = providerManager,
+       _repository = repository;
 
   // ---------------------------------------------------------------------------
   // State
@@ -44,6 +45,10 @@ class ChatViewModel extends ChangeNotifier {
   bool _isLoading = false;
   bool _isInitialized = false;
 
+  /// List of past chat sessions shown in the Drawer.
+  final List<ChatSession> _chatSessions = [];
+  bool _isLoadingSessions = false;
+
   // Streaming state
   String _streamingBuffer = '';
   bool _isStreaming = false;
@@ -56,6 +61,10 @@ class ChatViewModel extends ChangeNotifier {
   bool get isListening => _isListening;
   bool get isLoading => _isLoading;
   bool get isInitialized => _isInitialized;
+
+  /// Unmodifiable view of past sessions for the Drawer list.
+  List<ChatSession> get chatSessions => List.unmodifiable(_chatSessions);
+  bool get isLoadingSessions => _isLoadingSessions;
 
   /// Non-empty while the AI is actively streaming a response.
   /// The View should render this as a live "typing" bubble.
@@ -101,7 +110,9 @@ class ChatViewModel extends ChangeNotifier {
       _isInitialized = true;
     } catch (_) {
       // Fail silently — the app continues without history.
-      debugPrint('[ChatViewModel] initialize() failed; continuing without history.');
+      debugPrint(
+        '[ChatViewModel] initialize() failed; continuing without history.',
+      );
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -174,12 +185,14 @@ class ChatViewModel extends ChangeNotifier {
     } catch (_) {
       // 7. On any error: discard all received tokens and show a child-friendly
       //    fallback. Never surface technical error messages to the child.
-      _messages.add(ChatMessage(
-        id: 'fallback_${DateTime.now().millisecondsSinceEpoch}',
-        sender: MessageSender.ai,
-        text: '어머, 잠깐 생각이 딴 데로 갔나 봐! 다시 한 번 이야기해 줄래?',
-        timestamp: DateTime.now(),
-      ));
+      _messages.add(
+        ChatMessage(
+          id: 'fallback_${DateTime.now().millisecondsSinceEpoch}',
+          sender: MessageSender.ai,
+          text: '어머, 잠깐 생각이 딴 데로 갔나 봐! 다시 한 번 이야기해 줄래?',
+          timestamp: DateTime.now(),
+        ),
+      );
     } finally {
       // 8. Always clear streaming state regardless of outcome.
       _streamingBuffer = '';
@@ -193,6 +206,50 @@ class ChatViewModel extends ChangeNotifier {
     _messages.clear();
     _historyWindow.clear();
     notifyListeners();
+  }
+
+  /// Creates a brand-new chat session in Firestore, clears the current
+  /// message list, and resets the LLM history window so the next conversation
+  /// starts fresh. Fails silently — the UI simply keeps the existing session.
+  Future<void> startNewChat() async {
+    if (_userId.isEmpty) return;
+    _isLoading = true;
+    notifyListeners();
+    try {
+      final newChatId = await _repository.createChat(_userId);
+      if (newChatId.isEmpty) return; // createChat failed silently
+      _chatId = newChatId;
+      _messages.clear();
+      _historyWindow.clear();
+    } catch (_) {
+      // Fail silently — child stays in the current session.
+      debugPrint(
+        '[ChatViewModel] startNewChat() failed; keeping current session.',
+      );
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Fetches the full list of chat sessions from the repository and updates
+  /// [chatSessions]. Safe to call multiple times (e.g. every time the Drawer
+  /// opens). Fails silently to keep the child-friendly UX.
+  Future<void> loadChatSessions() async {
+    if (_userId.isEmpty) return;
+    _isLoadingSessions = true;
+    notifyListeners();
+    try {
+      final sessions = await _repository.listChats(_userId);
+      _chatSessions
+        ..clear()
+        ..addAll(sessions);
+    } catch (_) {
+      // Fail silently — drawer shows an empty list instead of an error.
+    } finally {
+      _isLoadingSessions = false;
+      notifyListeners();
+    }
   }
 
   // ---------------------------------------------------------------------------

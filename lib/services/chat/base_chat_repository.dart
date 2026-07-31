@@ -1,4 +1,5 @@
 import '../../models/chat_message.dart';
+import '../../models/chat_session.dart';
 
 /// Abstract interface for all chat data-access implementations.
 ///
@@ -9,7 +10,6 @@ import '../../models/chat_message.dart';
 /// Extension points for future phases (stub — do not implement yet):
 ///   - TODO: updateChatTitle(String userId, String chatId, String title)
 ///   - TODO: deleteChat(String userId, String chatId)
-///   - TODO: listChats(String userId) → List<ChatSession>
 abstract class BaseChatRepository {
   /// Signs in anonymously and returns the user's UID.
   /// If a session already exists the existing UID is returned unchanged.
@@ -27,4 +27,8 @@ abstract class BaseChatRepository {
   /// Implementations should fail silently on error — this is intended to be
   /// called fire-and-forget via [unawaited].
   Future<void> saveMessage(String userId, String chatId, ChatMessage message);
+
+  /// Returns all chat sessions for [userId] ordered by most recently updated
+  /// (descending). Returns an empty list on error.
+  Future<List<ChatSession>> listChats(String userId);
 }
