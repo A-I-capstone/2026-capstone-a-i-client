@@ -1,0 +1,18 @@
+{
+  "app_title": "Capstone AI Client",
+  "drawer_title_menu": "메뉴",
+  "drawer_menu_start_new_chat": "새 대화 시작",
+  "drawer_menu_settings": "설정",
+  "drawer_section_recent_chats": "최근 대화",
+  "chat_welcome_message": "안녕! 오늘은 어떤 얘기를 나눠볼까?",
+  "chat_input_hint": "메시지를 입력해 봐...",
+  "chat_empty_history": "아직 대화 기록이 없어요",
+  "default_chat_title": "새 대화",
+  "chat_fallback_error_message": "어머, 잠깐 생각이 딴 데로 갔나 봐! 다시 한 번 이야기해 줄래?",
+  "config_error_system_prompt_empty": "[Config Error] system_prompt is empty. Please set a valid system prompt in Firebase Remote Config.",
+  "date_format_today": "오늘",
+  "date_format_yesterday": "어제",
+  "date_format_days_ago_suffix": "일 전",
+  "date_format_month_suffix": "월",
+  "date_format_day_suffix": "일"
+}
