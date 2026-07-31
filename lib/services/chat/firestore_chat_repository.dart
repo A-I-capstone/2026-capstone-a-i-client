@@ -13,6 +13,7 @@ import 'base_chat_repository.dart';
 ///   users/{userId}/chats/{chatId}
 ///     ├── title: String
 ///     ├── updatedAt: Timestamp
+///     ├── messageCount: int
 ///     └── messages/ (subcollection)
 ///          └── {messageId}
 ///               ├── role: 'user' | 'model'
@@ -58,6 +59,7 @@ class FirestoreChatRepository implements BaseChatRepository {
         // TODO: Replace fixed title with auto-generated title in a future phase.
         'title': '새 대화',
         'updatedAt': FieldValue.serverTimestamp(),
+        'messageCount': 0,
       });
 
       return chatRef.id;
@@ -110,7 +112,13 @@ class FirestoreChatRepository implements BaseChatRepository {
           .doc(userId)
           .collection('chats')
           .doc(chatId)
-          .update({'updatedAt': FieldValue.serverTimestamp()});
+          .update({
+            'updatedAt': FieldValue.serverTimestamp(),
+            'messageCount': FieldValue.increment(1),
+          });
+      debugPrint(
+        '[Firestore] 채팅 updatedAt 갱신 및 messageCount +1 완료 (chatId: $chatId)',
+      );
     } catch (e, st) {
       debugPrint('[FirestoreChatRepository] saveMessage error: $e\n$st');
       // Intentionally swallowed — caller uses unawaited fire-and-forget.
@@ -130,10 +138,15 @@ class FirestoreChatRepository implements BaseChatRepository {
         final data = doc.data();
         final updatedAt =
             (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now();
+        final messageCount = (data['messageCount'] as int?) ?? 0;
+        debugPrint(
+          '[Firestore]   - chatId: ${doc.id}, title: "${data['title']}", updatedAt: $updatedAt, messageCount: $messageCount',
+        );
         return ChatSession(
           id: doc.id,
           title: (data['title'] as String?) ?? '새 대화',
           updatedAt: updatedAt,
+          messageCount: messageCount,
         );
       }).toList();
     } catch (e, st) {

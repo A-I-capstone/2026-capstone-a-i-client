@@ -108,6 +108,10 @@ class ChatViewModel extends ChangeNotifier {
         );
 
       _isInitialized = true;
+
+      // 5. Background cleanup: delete empty sessions from previous runs.
+      //    The current _chatId is always excluded from deletion.
+      unawaited(_deleteEmptyChats(exceptions: [_chatId]));
     } catch (_) {
       // Fail silently — the app continues without history.
       debugPrint(
@@ -218,9 +222,15 @@ class ChatViewModel extends ChangeNotifier {
     try {
       final newChatId = await _repository.createChat(_userId);
       if (newChatId.isEmpty) return; // createChat failed silently
+
+      final prevChatId = _chatId;
       _chatId = newChatId;
       _messages.clear();
       _historyWindow.clear();
+
+      // Background cleanup: delete sessions with no messages.
+      // The newly created chatId is always excluded from deletion.
+      unawaited(_deleteEmptyChats(exceptions: [newChatId]));
     } catch (_) {
       // Fail silently — child stays in the current session.
       debugPrint(
@@ -255,6 +265,33 @@ class ChatViewModel extends ChangeNotifier {
   // ---------------------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------------------
+
+  /// Fetches all sessions for the current user and deletes any that have
+  /// [ChatSession.messageCount] == 0, skipping IDs listed in [exceptions].
+  ///
+  /// Designed to be called fire-and-forget via [unawaited] so it never blocks
+  /// the UI. Fails silently on error.
+  Future<void> _deleteEmptyChats({required List<String> exceptions}) async {
+    debugPrint('[ViewModel] _deleteEmptyChats() 호출됨 (exceptions: $exceptions)');
+    try {
+      final allSessions = await _repository.listChats(_userId);
+      final toDelete = allSessions
+          .where((s) => s.messageCount == 0 && !exceptions.contains(s.id))
+          .toList();
+      if (toDelete.isEmpty) {
+        debugPrint('[ViewModel] _deleteEmptyChats() 삭제 대상 없음');
+        return;
+      }
+      debugPrint('[ViewModel] _deleteEmptyChats() 삭제 대상 ${toDelete.length}개:');
+      for (final session in toDelete) {
+        debugPrint('[ViewModel]   - 빈 채팅 삭제: ${session.id}');
+        unawaited(_repository.deleteChat(_userId, session.id));
+      }
+    } catch (e, st) {
+      debugPrint('[ViewModel] _deleteEmptyChats() 오류: $e\n$st');
+      // Intentionally swallowed — cleanup failure must not affect the child’s UX.
+    }
+  }
 
   /// Appends [message] to [_historyWindow] and evicts the oldest entry if the
   /// window exceeds [_historyWindowSize].
