@@ -2,13 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'theme/app_theme.dart';
 import 'viewmodels/chat_viewmodel.dart';
+import 'viewmodels/profile_viewmodel.dart';
+import 'viewmodels/settings_viewmodel.dart';
 import 'views/chat_view.dart';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'firebase_options.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'services/chat/base_chat_repository.dart';
 import 'services/chat/firestore_chat_repository.dart';
+import 'services/profile/base_profile_repository.dart';
+import 'services/profile/firestore_profile_repository.dart';
 import 'services/llm/gemini_provider.dart';
 import 'services/llm/provider_manager.dart';
 
@@ -21,8 +26,8 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await FirebaseAppCheck.instance.activate(
-    providerAndroid:
-        AndroidDebugProvider(), // use AndroidPlayIntegrityProvider() for production
+    providerAndroid: AndroidDebugProvider(),
+    providerWeb: WebDebugProvider(),
   );
 
   final remoteConfig = FirebaseRemoteConfig.instance;
@@ -35,8 +40,7 @@ void main() async {
 
   await remoteConfig.setDefaults(const {
     "model_name": "gemini-3.6-flash",
-    "title_model_name": "gemini-3.6-flash",
-    "title_system_prompt": "You are a title generator. Generate a concise, child-friendly title (max 5 words) summarizing the user's message. Output only the title, without quotes.",
+    "title_model_name": "gemini-3.5-flash-lite",
   });
 
   try {
@@ -87,15 +91,31 @@ void main() async {
 
   // BaseChatRepository typed — swap to a different backend by changing this
   // single line without touching ViewModel or View code.
-  final BaseChatRepository repository = FirestoreChatRepository();
+  final BaseChatRepository chatRepository = FirestoreChatRepository();
+
+  // BaseProfileRepository typed — same swap-friendly pattern.
+  final BaseProfileRepository profileRepository = FirestoreProfileRepository();
+
+  // ProfileViewModel is created first so it can be passed into ChatViewModel.
+  final profileViewModel = ProfileViewModel(repository: profileRepository);
+
+  // SettingsViewModel is initialised before runApp so that persisted settings
+  // (font, text size, TTS voice) are ready before the first frame is drawn.
+  final settingsViewModel = SettingsViewModel();
+  await settingsViewModel.init();
 
   runApp(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider<ProfileViewModel>.value(value: profileViewModel),
+        ChangeNotifierProvider<SettingsViewModel>.value(
+          value: settingsViewModel,
+        ),
         ChangeNotifierProvider(
           create: (_) => ChatViewModel(
             providerManager: providerManager,
-            repository: repository,
+            repository: chatRepository,
+            profileViewModel: profileViewModel,
           ),
         ),
       ],
@@ -109,10 +129,26 @@ class CapstoneAiApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final settings = context.watch<SettingsViewModel>();
+
     return MaterialApp(
       title: 'Capstone AI Client',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
+      theme: AppTheme.buildTheme(
+        fontFamily: settings.fontFamily,
+        isBold: settings.isBold,
+      ),
+      // Override textScaler for all descendants so the font-size slider
+      // affects every text widget in the app without individual wiring.
+      builder: (context, child) {
+        final scale = settings.textSize / SettingsViewModel.defaultTextSize;
+        return MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: TextScaler.linear(scale)),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
       home: const ChatView(),
     );
   }
