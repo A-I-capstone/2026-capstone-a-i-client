@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
@@ -50,6 +50,8 @@ class SettingsView extends StatelessWidget {
   }
 }
 
+// ── Shared card shell ──────────────────────────────────────────────────────
+
 class _SettingsCard extends StatelessWidget {
   final String title;
   final Widget child;
@@ -69,10 +71,7 @@ class _SettingsCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppColors.surface,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: AppColors.ink,
-              width: 2,
-            ), // thick ink outline for kid-friendly design
+            border: Border.all(color: AppColors.ink, width: 2),
           ),
           child: child,
         ),
@@ -81,8 +80,11 @@ class _SettingsCard extends StatelessWidget {
   }
 }
 
+// ── Account section ────────────────────────────────────────────────────────
+
 class _AccountSection extends StatelessWidget {
   const _AccountSection();
+
   @override
   Widget build(BuildContext context) {
     final activeProfile = context.watch<ProfileViewModel>().activeProfile;
@@ -128,11 +130,16 @@ class _AccountSection extends StatelessWidget {
   }
 }
 
+// ── Voice section ──────────────────────────────────────────────────────────
+
 class _VoiceSection extends StatelessWidget {
   const _VoiceSection();
+
   @override
   Widget build(BuildContext context) {
     final viewModel = context.watch<SettingsViewModel>();
+    final voices = viewModel.availableVoices;
+
     return _SettingsCard(
       title: '음성',
       child: Column(
@@ -140,47 +147,73 @@ class _VoiceSection extends StatelessWidget {
         children: [
           const Text('어떤 목소리로 이야기할까요?', style: AppTypography.bodyLarge),
           const SizedBox(height: 16),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: viewModel.availableVoices.map((voice) {
-              final isSelected = viewModel.ttsVoice == voice;
-              return GestureDetector(
-                onTap: () =>
-                    context.read<SettingsViewModel>().setTtsVoice(voice),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isSelected ? AppColors.tangerine : AppColors.surface,
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: AppColors.ink, width: 2),
-                  ),
-                  child: Text(
-                    voice,
-                    style: AppTypography.bodyLarge.copyWith(
-                      fontWeight: isSelected
-                          ? FontWeight.w800
-                          : FontWeight.w500,
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
+          if (voices.isEmpty)
+            Text(
+              '기기에서 한국어 음성을 불러오는 중이에요...',
+              style: AppTypography.bodyMedium.copyWith(color: AppColors.slate),
+            )
+          else
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: voices.map((voice) {
+                final isSelected = viewModel.ttsVoice == voice;
+                return _VoiceChip(
+                  voice: voice,
+                  isSelected: isSelected,
+                  onTap: () =>
+                      context.read<SettingsViewModel>().setTtsVoice(voice),
+                );
+              }).toList(),
+            ),
         ],
       ),
     );
   }
 }
 
+class _VoiceChip extends StatelessWidget {
+  final String voice;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _VoiceChip({
+    required this.voice,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.tangerine : AppColors.surface,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: AppColors.ink, width: 2),
+        ),
+        child: Text(
+          voice,
+          style: AppTypography.bodyLarge.copyWith(
+            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Text / font section ────────────────────────────────────────────────────
+
 class _TextSettingsSection extends StatelessWidget {
   const _TextSettingsSection();
+
   @override
   Widget build(BuildContext context) {
     final viewModel = context.watch<SettingsViewModel>();
+
     return _SettingsCard(
       title: '글자 설정',
       child: Column(
@@ -203,30 +236,16 @@ class _TextSettingsSection extends StatelessWidget {
           Wrap(
             spacing: 12,
             runSpacing: 12,
-            children: viewModel.availableFonts.map((font) {
-              final isSelected = viewModel.fontFamily == font;
-              return GestureDetector(
-                onTap: () =>
-                    context.read<SettingsViewModel>().setFontFamily(font),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 10,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isSelected ? AppColors.mint : AppColors.surface,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.ink, width: 2),
-                  ),
-                  child: Text(
-                    font,
-                    style: AppTypography.bodyLarge.copyWith(
-                      fontWeight: isSelected
-                          ? FontWeight.w800
-                          : FontWeight.w500,
-                    ),
-                  ),
-                ),
+            children: SettingsViewModel.availableFonts.map((font) {
+              final isSelected =
+                  viewModel.selectedFontDisplayName == font.displayName;
+              return _FontChip(
+                displayName: font.displayName,
+                fontFamily: font.fontFamily,
+                isSelected: isSelected,
+                onTap: () => context
+                    .read<SettingsViewModel>()
+                    .setFontFamily(font.displayName),
               );
             }).toList(),
           ),
@@ -247,54 +266,106 @@ class _TextSettingsSection extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 24),
-          // Preview Area
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: AppColors.sunriseYellow,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.ink, width: 2),
+          _FontPreview(viewModel: viewModel),
+        ],
+      ),
+    );
+  }
+}
+
+class _FontChip extends StatelessWidget {
+  final String displayName;
+  final String? fontFamily;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _FontChip({
+    required this.displayName,
+    required this.fontFamily,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.mint : AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.ink, width: 2),
+        ),
+        child: Text(
+          displayName,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+            color: AppColors.ink,
+            fontFamily: fontFamily,
+            height: 1.4,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FontPreview extends StatelessWidget {
+  final SettingsViewModel viewModel;
+
+  const _FontPreview({required this.viewModel});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.sunriseYellow,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.ink, width: 2),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '미리보기',
+            style: AppTypography.bodyMedium.copyWith(
+              color: AppColors.ink.withOpacity(0.6),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '미리보기',
-                  style: AppTypography.bodyMedium.copyWith(
-                    color: AppColors.ink.withOpacity(0.6),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '안녕! 나는 너의 AI 친구야.\n이 글자가 어떻게 보여?',
-                  style: TextStyle(
-                    fontSize: viewModel.textSize,
-                    fontWeight: viewModel.isBold
-                        ? FontWeight.w800
-                        : FontWeight.w500,
-                    color: AppColors.ink,
-                    fontFamily: _getFontFamily(viewModel.fontFamily),
-                    height: 1.4,
-                  ),
-                ),
-              ],
+          ),
+          const SizedBox(height: 8),
+          // The preview bypasses the app-wide textScaler so the slider value
+          // is shown at its literal pt size (easier to judge relative change).
+          MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: TextScaler.noScaling,
+            ),
+            child: Text(
+              '안녕! 나는 너의 AI 친구야.\n이 글자가 어떻게 보여?',
+              style: TextStyle(
+                fontSize: viewModel.textSize,
+                fontWeight:
+                    viewModel.isBold ? FontWeight.w700 : FontWeight.w500,
+                color: AppColors.ink,
+                fontFamily: viewModel.fontFamily,
+                height: 1.4,
+              ),
             ),
           ),
         ],
       ),
     );
   }
-
-  String? _getFontFamily(String font) {
-    if (font == '둥근 폰트') return 'Nunito';
-    if (font == '반듯한 폰트') return 'General Sans';
-    return null;
-  }
 }
+
+// ── Help section ───────────────────────────────────────────────────────────
 
 class _HelpSection extends StatelessWidget {
   const _HelpSection();
+
   @override
   Widget build(BuildContext context) {
     return _SettingsCard(
