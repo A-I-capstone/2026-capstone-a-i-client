@@ -8,6 +8,7 @@ import '../widgets/bouncy_button.dart';
 import '../widgets/pulse_loader.dart';
 import '../widgets/chat/chat_bubble.dart';
 import '../widgets/chat/chat_input_bar.dart';
+import 'settings_view.dart';
 
 /// Main Chat Screen (View layer)
 class ChatView extends StatefulWidget {
@@ -146,7 +147,16 @@ class _DrawerTopSection extends StatelessWidget {
                 viewModel.startNewChat();
               },
             ),
-            const _DrawerMenuTile(icon: Icons.settings_outlined, label: '설정'),
+            _DrawerMenuTile(
+              icon: Icons.settings_outlined, 
+              label: '설정',
+              onTap: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const SettingsView()),
+                );
+              },
+            ),
           ],
         ),
       ),

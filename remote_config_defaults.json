@@ -14,5 +14,19 @@
   "date_format_yesterday": "어제",
   "date_format_days_ago_suffix": "일 전",
   "date_format_month_suffix": "월",
-  "date_format_day_suffix": "일"
+  "date_format_day_suffix": "일",
+  "settings_title": "설정",
+  "settings_section_account": "계정 관리",
+  "settings_account_name": "내 친구",
+  "settings_account_edit_profile": "프로필 변경하기",
+  "settings_section_voice": "음성",
+  "settings_voice_prompt": "어떤 목소리로 이야기할까요?",
+  "settings_section_text": "글자 설정",
+  "settings_text_size_label": "글자 크기",
+  "settings_font_label": "폰트",
+  "settings_text_bold_label": "글자 굵게 보기",
+  "settings_preview_label": "미리보기",
+  "settings_preview_sample_text": "안녕! 나는 너의 AI 친구야.\n이 글자가 어떻게 보여?",
+  "settings_section_help": "도움말",
+  "settings_help_prompt": "궁금한 점이 있나요?"
 }
