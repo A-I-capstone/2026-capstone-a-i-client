@@ -19,6 +19,8 @@ import 'services/llm/provider_manager.dart';
 
 late final String _modelName;
 late final String _systemPrompt;
+late final String _titleModelName;
+late final String _titleSystemPrompt;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -36,7 +38,10 @@ void main() async {
     ),
   );
 
-  await remoteConfig.setDefaults(const {"model_name": "gemini-3.6-flash"});
+  await remoteConfig.setDefaults(const {
+    "model_name": "gemini-3.6-flash",
+    "title_model_name": "gemini-3.5-flash-lite",
+  });
 
   try {
     await remoteConfig.fetchAndActivate();
@@ -47,6 +52,8 @@ void main() async {
 
   _modelName = remoteConfig.getString('model_name');
   _systemPrompt = remoteConfig.getString('system_prompt');
+  _titleModelName = remoteConfig.getString('title_model_name');
+  _titleSystemPrompt = remoteConfig.getString('title_system_prompt');
 
   // system_prompt must never be empty — the AI cannot operate safely without it.
   // Detailed error UI will be added in a future phase; fail fast for now.
@@ -64,14 +71,21 @@ void main() async {
     await remoteConfig.activate();
     _modelName = remoteConfig.getString("model_name");
     _systemPrompt = remoteConfig.getString("system_prompt");
+    _titleModelName = remoteConfig.getString("title_model_name");
+    _titleSystemPrompt = remoteConfig.getString("title_system_prompt");
     debugPrint('Remote Config updated model_name: $_modelName');
     debugPrint('Remote Config system_prompt updated');
+    debugPrint('Remote Config title configs updated');
   });
 
   final providerManager = ProviderManager(
     provider: GeminiProvider(
       modelName: _modelName,
       systemPrompt: _systemPrompt,
+    ),
+    titleProvider: GeminiProvider(
+      modelName: _titleModelName,
+      systemPrompt: _titleSystemPrompt,
     ),
   );
 
@@ -129,9 +143,9 @@ class CapstoneAiApp extends StatelessWidget {
       builder: (context, child) {
         final scale = settings.textSize / SettingsViewModel.defaultTextSize;
         return MediaQuery(
-          data: MediaQuery.of(context).copyWith(
-            textScaler: TextScaler.linear(scale),
-          ),
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: TextScaler.linear(scale)),
           child: child ?? const SizedBox.shrink(),
         );
       },

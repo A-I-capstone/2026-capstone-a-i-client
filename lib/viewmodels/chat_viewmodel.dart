@@ -186,6 +186,8 @@ class ChatViewModel extends ChangeNotifier {
     final trimmedText = text.trim();
     if (trimmedText.isEmpty) return;
 
+    final isFirstMessage = _messages.isEmpty;
+
     // 1. Build the user message.
     final userMsg = ChatMessage(
       id: 'user_${DateTime.now().millisecondsSinceEpoch}',
@@ -204,6 +206,10 @@ class ChatViewModel extends ChangeNotifier {
 
     // 3. Persist the user message in the background — do not await.
     unawaited(_repository.saveMessage(_userId, _profileId, _chatId, userMsg));
+
+    if (isFirstMessage) {
+      unawaited(_generateAndSetChatTitle(trimmedText));
+    }
 
     try {
       // 4. Stream the AI response, passing the current history window.
@@ -245,6 +251,24 @@ class ChatViewModel extends ChangeNotifier {
       _isLoading = false;
       _isStreaming = false;
       notifyListeners();
+    }
+  }
+
+  Future<void> _generateAndSetChatTitle(String firstMessage) async {
+    try {
+      final generatedTitle = await _providerManager.generateTitle(firstMessage);
+      if (generatedTitle.isNotEmpty) {
+        await _repository.updateChatTitle(
+          _userId,
+          _profileId,
+          _chatId,
+          generatedTitle,
+        );
+        // Refresh the local drawer list in the background
+        unawaited(loadChatSessions());
+      }
+    } catch (e) {
+      debugPrint('[Title Gen] error: $e');
     }
   }
 
@@ -381,9 +405,7 @@ class ChatViewModel extends ChangeNotifier {
               ? _messages.sublist(_messages.length - _historyWindowSize)
               : List.of(_messages),
         );
-      debugPrint(
-        '[ChatViewModel] loadChat() 완료: 불러온 메시지 수 = ${loaded.length}',
-      );
+      debugPrint('[ChatViewModel] loadChat() 완료: 불러온 메시지 수 = ${loaded.length}');
 
       // 이전 채팅방이 비어있었다면 백그라운드 정리를 수행 (현재 이동한 채팅방은 예외 처리)
       if (previousWasEmpty) {

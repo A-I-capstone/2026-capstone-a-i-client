@@ -184,4 +184,24 @@ class FirestoreChatRepository implements BaseChatRepository {
       debugPrint('[Firestore] deleteChat() 오류: $e\n$st');
     }
   }
+
+  @override
+  Future<void> updateChatTitle(
+    String userId,
+    String profileId,
+    String chatId,
+    String newTitle,
+  ) async {
+    try {
+      await _chatsRef(
+        userId,
+        profileId,
+      ).doc(chatId).update({'title': newTitle});
+      debugPrint(
+        '[Firestore] updateChatTitle() 완료 → chatId: $chatId, title: $newTitle',
+      );
+    } catch (e, st) {
+      debugPrint('[FirestoreChatRepository] updateChatTitle error: $e\n$st');
+    }
+  }
 }

@@ -44,4 +44,12 @@ abstract class BaseChatRepository {
   /// for the given [userId] / [profileId] / [chatId] triple.
   /// Fails silently on error.
   Future<void> deleteChat(String userId, String profileId, String chatId);
+
+  /// Updates the title of the chat document.
+  Future<void> updateChatTitle(
+    String userId,
+    String profileId,
+    String chatId,
+    String newTitle,
+  );
 }
