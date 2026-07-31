@@ -9,7 +9,6 @@ import '../../models/chat_session.dart';
 ///
 /// Extension points for future phases (stub — do not implement yet):
 ///   - TODO: updateChatTitle(String userId, String chatId, String title)
-///   - TODO: deleteChat(String userId, String chatId)
 abstract class BaseChatRepository {
   /// Signs in anonymously and returns the user's UID.
   /// If a session already exists the existing UID is returned unchanged.
@@ -31,4 +30,10 @@ abstract class BaseChatRepository {
   /// Returns all chat sessions for [userId] ordered by most recently updated
   /// (descending). Returns an empty list on error.
   Future<List<ChatSession>> listChats(String userId);
+
+  /// Permanently deletes the chat document and all its messages subcollection
+  /// for the given [userId] / [chatId] pair.
+  /// Fails silently on error — callers should not rely on a return value for
+  /// success confirmation.
+  Future<void> deleteChat(String userId, String chatId);
 }
