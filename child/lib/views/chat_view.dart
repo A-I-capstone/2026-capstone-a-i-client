@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../models/chat_message.dart';
 import '../models/chat_session.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
@@ -385,6 +386,16 @@ class _MessageListArea extends StatelessWidget {
         if (index < messages.length) {
           return ChatBubble(message: messages[index]);
         } else {
+          if (viewModel.isStreaming && viewModel.streamingBuffer.isNotEmpty) {
+            return ChatBubble(
+              message: ChatMessage(
+                id: 'streaming_buffer',
+                sender: MessageSender.ai,
+                text: viewModel.streamingBuffer,
+                timestamp: DateTime.now(),
+              ),
+            );
+          }
           return const Padding(
             padding: EdgeInsets.symmetric(vertical: 12.0),
             child: PulseLoader(size: 36),
@@ -394,6 +405,7 @@ class _MessageListArea extends StatelessWidget {
     );
   }
 }
+
 
 /// Centered welcome greeting header displayed in the middle of the screen
 class _CenteredWelcomeHeader extends StatelessWidget {

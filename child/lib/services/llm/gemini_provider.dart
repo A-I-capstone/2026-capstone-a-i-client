@@ -15,11 +15,9 @@ class GeminiProvider implements BaseLLMProvider {
 
   late final GenerativeModel _model;
 
-  GeminiProvider({
-    required String modelName,
-    required String systemPrompt,
-  })  : _modelName = modelName,
-        _systemPrompt = systemPrompt {
+  GeminiProvider({required String modelName, required String systemPrompt})
+    : _modelName = modelName,
+      _systemPrompt = systemPrompt {
     _model = FirebaseAI.googleAI().generativeModel(
       model: _modelName,
       systemInstruction: Content.system(_systemPrompt),
@@ -41,8 +39,7 @@ class GeminiProvider implements BaseLLMProvider {
     final chat = _model.startChat(history: contentHistory);
 
     try {
-      final responseStream =
-          chat.sendMessageStream(Content.text(userMessage));
+      final responseStream = chat.sendMessageStream(Content.text(userMessage));
 
       await for (final response in responseStream) {
         // TODO: postprocessOutput() hook — apply output filtering here
