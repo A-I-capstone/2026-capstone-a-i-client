@@ -1,4 +1,4 @@
-package com.capstone_ai_client_parent.parent
+package com.capstone_ai_client.parent
 
 import io.flutter.embedding.android.FlutterActivity
 
