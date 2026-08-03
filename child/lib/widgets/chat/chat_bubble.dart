@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import '../../models/chat_message.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_typography.dart';
 
 /// Child-friendly message bubble component with 24px radius and 2px Ink outlines.
+/// Supports Markdown rendering for AI and user text.
 class ChatBubble extends StatelessWidget {
   final ChatMessage message;
 
@@ -36,11 +38,30 @@ class ChatBubble extends StatelessWidget {
           ),
           border: Border.all(color: AppColors.ink, width: 2.0),
         ),
-        child: Text(
-          message.text,
-          style: AppTypography.bodyLarge,
+        child: MarkdownBody(
+          data: message.text,
+          styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
+            p: AppTypography.bodyLarge,
+            h1: AppTypography.headlineLarge,
+            h2: AppTypography.headlineMedium,
+            h3: AppTypography.headlineMedium.copyWith(fontSize: 22),
+            strong: AppTypography.bodyLarge.copyWith(fontWeight: FontWeight.w700),
+            em: AppTypography.bodyLarge.copyWith(fontStyle: FontStyle.italic),
+            listBullet: AppTypography.bodyLarge,
+            code: AppTypography.bodyMedium.copyWith(
+              backgroundColor: AppColors.bg,
+              color: AppColors.ink,
+              fontFamily: 'monospace',
+            ),
+            codeblockDecoration: BoxDecoration(
+              color: AppColors.bg,
+              borderRadius: BorderRadius.circular(8.0),
+              border: Border.all(color: AppColors.border, width: 1.0),
+            ),
+          ),
         ),
       ),
     );
   }
 }
+

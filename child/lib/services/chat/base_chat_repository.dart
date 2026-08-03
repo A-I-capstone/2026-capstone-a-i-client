@@ -1,6 +1,8 @@
 import '../../models/chat_message.dart';
 import '../../models/chat_session.dart';
 
+// TODO: local storage 추가
+
 /// Abstract interface for all chat data-access implementations.
 ///
 /// All methods require both [userId] (device UID) and [profileId] so that

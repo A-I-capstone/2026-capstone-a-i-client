@@ -5,6 +5,8 @@ import '../../models/chat_message.dart';
 import '../../models/chat_session.dart';
 import 'base_chat_repository.dart';
 
+// TODO: 세이프티 설정 (폭력성 등)
+
 /// Concrete [BaseChatRepository] that communicates directly with
 /// Firebase Anonymous Auth and Cloud Firestore.
 ///
@@ -31,13 +33,12 @@ class FirestoreChatRepository implements BaseChatRepository {
   CollectionReference<Map<String, dynamic>> _chatsRef(
     String userId,
     String profileId,
-  ) =>
-      _firestore
-          .collection('users')
-          .doc(userId)
-          .collection('profiles')
-          .doc(profileId)
-          .collection('chats');
+  ) => _firestore
+      .collection('users')
+      .doc(userId)
+      .collection('profiles')
+      .doc(profileId)
+      .collection('chats');
 
   // ---------------------------------------------------------------------------
   // BaseChatRepository implementation
@@ -92,8 +93,10 @@ class FirestoreChatRepository implements BaseChatRepository {
     ChatMessage message,
   ) async {
     try {
-      final messagesRef =
-          _chatsRef(userId, profileId).doc(chatId).collection('messages');
+      final messagesRef = _chatsRef(
+        userId,
+        profileId,
+      ).doc(chatId).collection('messages');
 
       await messagesRef.doc(message.id).set(message.toFirestore());
 
@@ -114,9 +117,10 @@ class FirestoreChatRepository implements BaseChatRepository {
   @override
   Future<List<ChatSession>> listChats(String userId, String profileId) async {
     try {
-      final snapshot = await _chatsRef(userId, profileId)
-          .orderBy('updatedAt', descending: true)
-          .get();
+      final snapshot = await _chatsRef(
+        userId,
+        profileId,
+      ).orderBy('updatedAt', descending: true).get();
       return snapshot.docs.map((doc) {
         final data = doc.data();
         final updatedAt =

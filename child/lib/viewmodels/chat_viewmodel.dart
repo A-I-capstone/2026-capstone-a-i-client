@@ -216,14 +216,17 @@ class ChatViewModel extends ChangeNotifier {
     }
 
     try {
+      debugPrint('[ChatViewModel] sendMessage() → AI 스트리밍 시작');
       // 4. Stream the AI response, passing the current history window.
       await for (final chunk in _providerManager.sendMessageStream(
         trimmedText,
         history: List.of(_historyWindow),
       )) {
+        debugPrint('[ChatViewModel] 스트리밍 조각 수신 (${chunk.length}자): $chunk');
         _streamingBuffer += chunk;
         notifyListeners();
       }
+      debugPrint('[ChatViewModel] AI 스트리밍 완료 (총 길잉: ${_streamingBuffer.length}자)');
 
       // 5. Stream completed — commit the full response as an immutable ChatMessage.
       final aiMsg = ChatMessage(
@@ -238,7 +241,8 @@ class ChatViewModel extends ChangeNotifier {
 
       // 6. Persist the AI message in the background — do not await.
       unawaited(_repository.saveMessage(_userId, _profileId, _chatId, aiMsg));
-    } catch (_) {
+    } catch (e, st) {
+      debugPrint('[ChatViewModel] AI 스트리밍 중 오류 발생: $e\n$st');
       // 7. On any error: discard all received tokens and show a child-friendly
       //    fallback. Never surface technical error messages to the child.
       _messages.add(
