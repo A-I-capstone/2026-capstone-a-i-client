@@ -54,6 +54,7 @@ dependencies:
   pinput: ^5.0.0
   mobile_scanner: ^7.0.0
   change_app_package_name: ^1.5.0
+  flame: ^1.20.0
 
 dev_dependencies:
   flutter_test:
@@ -80,6 +81,11 @@ flutter:
 
   assets:
     - assets/
+    - assets/game/
+    - assets/game/data/
+    - assets/game/image/
+    - assets/game/image/icons/
+
 
 
 

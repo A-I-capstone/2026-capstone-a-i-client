@@ -10,7 +10,9 @@ import '../widgets/bouncy_button.dart';
 import '../widgets/pulse_loader.dart';
 import '../widgets/chat/chat_bubble.dart';
 import '../widgets/chat/chat_input_bar.dart';
+import '../utils/game_page_route.dart';
 import 'settings_view.dart';
+import 'village/village_view.dart';
 
 /// Main Chat Screen (View layer)
 class ChatView extends StatefulWidget {
@@ -18,6 +20,7 @@ class ChatView extends StatefulWidget {
   @override
   State<ChatView> createState() => _ChatViewState();
 }
+
 
 class _ChatViewState extends State<ChatView> {
   @override
@@ -97,6 +100,46 @@ class _ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
         ),
       ),
       actions: [
+        // Temporary Debug Button for testing Village Screen (must be deleted before final release)
+        Center(
+          child: Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: GestureDetector(
+              onTap: () {
+                Navigator.of(context).push(
+                  GamePageRoute(builder: (_) => const VillageView()),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFF0055), // High-contrast neon pink
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.yellowAccent, width: 2),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.holiday_village_rounded,
+                      color: Colors.yellowAccent,
+                      size: 16,
+                    ),
+                    SizedBox(width: 4),
+                    Text(
+                      'DEBUG 마을',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
         Center(
           child: Padding(
             padding: const EdgeInsets.only(right: 8.0),
@@ -114,6 +157,7 @@ class _ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
           ),
         ),
       ],
+
     );
   }
 }
