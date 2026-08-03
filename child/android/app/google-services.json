@@ -9,7 +9,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:103993825834:android:ef8d7ddb3c6cdb5974c153",
         "android_client_info": {
-          "package_name": "com.example.capstone_ai_client"
+          "package_name": "com.capstone_ai_client_child"
         }
       },
       "oauth_client": [],
