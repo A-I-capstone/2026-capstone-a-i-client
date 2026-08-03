@@ -1,0 +1,58 @@
+[
+  {
+    "id": "building_house_small",
+    "name": "작은 집",
+    "category": "building",
+    "price": 50,
+    "assetPath": null
+  },
+  {
+    "id": "building_school",
+    "name": "학교",
+    "category": "building",
+    "price": 120,
+    "assetPath": null
+  },
+  {
+    "id": "nature_tree_oak",
+    "name": "참나무",
+    "category": "nature",
+    "price": 20,
+    "assetPath": null
+  },
+  {
+    "id": "nature_flower_bed",
+    "name": "꽃밭",
+    "category": "nature",
+    "price": 15,
+    "assetPath": null
+  },
+  {
+    "id": "facility_bench",
+    "name": "벤치",
+    "category": "facility",
+    "price": 30,
+    "assetPath": null
+  },
+  {
+    "id": "facility_fountain",
+    "name": "분수대",
+    "category": "facility",
+    "price": 80,
+    "assetPath": null
+  },
+  {
+    "id": "fence_wood",
+    "name": "나무 울타리",
+    "category": "fence",
+    "price": 10,
+    "assetPath": null
+  },
+  {
+    "id": "fence_stone",
+    "name": "돌 울타리",
+    "category": "fence",
+    "price": 25,
+    "assetPath": null
+  }
+]

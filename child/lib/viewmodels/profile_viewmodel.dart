@@ -34,7 +34,9 @@ class ProfileViewModel extends ChangeNotifier {
 
   List<Profile> get profiles => List.unmodifiable(_profiles);
   Profile? get activeProfile => _activeProfile;
+  String get userId => _userId;
   bool get isLoading => _isLoading;
+
 
   // ---------------------------------------------------------------------------
   // Initialization
