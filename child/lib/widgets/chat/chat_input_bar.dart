@@ -67,7 +67,6 @@ class _InputField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final micColor = isListening ? AppColors.ocean : AppColors.ink;
 
     return TextField(
       controller: controller,

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared/shared.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'theme/app_theme.dart';
 import 'viewmodels/chat_viewmodel.dart';
 import 'viewmodels/profile_viewmodel.dart';
 import 'viewmodels/settings_viewmodel.dart';
 import 'views/chat_view.dart';
+import 'views/child_pairing_view.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
@@ -16,6 +19,11 @@ import 'services/profile/base_profile_repository.dart';
 import 'services/profile/firestore_profile_repository.dart';
 import 'services/llm/gemini_provider.dart';
 import 'services/llm/provider_manager.dart';
+
+// ---------------------------------------------------------------------------
+// SharedPreferences key for pairing completion flag
+// ---------------------------------------------------------------------------
+const _kPairingComplete = 'pairing_complete';
 
 late final String _modelName;
 late final String _systemPrompt;
@@ -46,7 +54,6 @@ void main() async {
   try {
     await remoteConfig.fetchAndActivate();
   } catch (e) {
-    // TODO: child-friendly한 오류 화면 만들기
     debugPrint('Error fetching Remote Config: $e');
   }
 
@@ -56,7 +63,6 @@ void main() async {
   _titleSystemPrompt = remoteConfig.getString('title_system_prompt');
 
   // system_prompt must never be empty — the AI cannot operate safely without it.
-  // Detailed error UI will be added in a future phase; fail fast for now.
   if (_systemPrompt.isEmpty) {
     throw Exception(
       '[Config Error] system_prompt is empty. '
@@ -73,11 +79,23 @@ void main() async {
     _systemPrompt = remoteConfig.getString("system_prompt");
     _titleModelName = remoteConfig.getString("title_model_name");
     _titleSystemPrompt = remoteConfig.getString("title_system_prompt");
-    debugPrint('Remote Config updated model_name: $_modelName');
-    debugPrint('Remote Config system_prompt updated');
-    debugPrint('Remote Config title configs updated');
   });
 
+  // ---------------------------------------------------------------------------
+  // Auth — shared BaseAuthProvider (FirebaseAuthProvider)
+  // ---------------------------------------------------------------------------
+  final BaseAuthProvider authProvider = FirebaseAuthProvider();
+  final String userId = await authProvider.signInAnonymously();
+
+  // ---------------------------------------------------------------------------
+  // Check pairing status
+  // ---------------------------------------------------------------------------
+  final prefs = await SharedPreferences.getInstance();
+  final isPaired = prefs.getBool(_kPairingComplete) ?? false;
+
+  // ---------------------------------------------------------------------------
+  // LLM and repositories
+  // ---------------------------------------------------------------------------
   final providerManager = ProviderManager(
     provider: GeminiProvider(
       modelName: _modelName,
@@ -107,6 +125,7 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
+        Provider<BaseAuthProvider>.value(value: authProvider),
         ChangeNotifierProvider<ProfileViewModel>.value(value: profileViewModel),
         ChangeNotifierProvider<SettingsViewModel>.value(
           value: settingsViewModel,
@@ -116,16 +135,30 @@ void main() async {
             providerManager: providerManager,
             repository: chatRepository,
             profileViewModel: profileViewModel,
+            authProvider: authProvider,
           ),
         ),
       ],
-      child: const CapstoneAiApp(),
+      child: CapstoneAiApp(
+        userId: userId,
+        isPaired: isPaired,
+        prefs: prefs,
+      ),
     ),
   );
 }
 
 class CapstoneAiApp extends StatelessWidget {
-  const CapstoneAiApp({super.key});
+  final String userId;
+  final bool isPaired;
+  final SharedPreferences prefs;
+
+  const CapstoneAiApp({
+    super.key,
+    required this.userId,
+    required this.isPaired,
+    required this.prefs,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -149,7 +182,36 @@ class CapstoneAiApp extends StatelessWidget {
           child: child ?? const SizedBox.shrink(),
         );
       },
-      home: const ChatView(),
+      home: isPaired
+          ? const ChatView()
+          : _PairingGate(userId: userId, prefs: prefs),
+    );
+  }
+}
+
+/// Wraps [ChildPairingView] and pushes [ChatView] once pairing succeeds.
+class _PairingGate extends StatefulWidget {
+  final String userId;
+  final SharedPreferences prefs;
+  const _PairingGate({required this.userId, required this.prefs});
+
+  @override
+  State<_PairingGate> createState() => _PairingGateState();
+}
+
+class _PairingGateState extends State<_PairingGate> {
+  @override
+  Widget build(BuildContext context) {
+    return ChildPairingView(
+      childUid: widget.userId,
+      onPaired: (familyId) async {
+        final navigator = Navigator.of(context);
+        await widget.prefs.setBool(_kPairingComplete, true);
+        if (!mounted) return;
+        navigator.pushReplacement(
+          MaterialPageRoute(builder: (_) => const ChatView()),
+        );
+      },
     );
   }
 }

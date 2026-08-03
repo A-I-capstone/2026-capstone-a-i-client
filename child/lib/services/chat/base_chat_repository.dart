@@ -10,10 +10,10 @@ import '../../models/chat_session.dart';
 /// The ViewModel depends only on this interface, so the underlying storage
 /// backend (Firestore, Supabase, SQLite…) can be swapped without touching
 /// any ViewModel code.
+///
+/// NOTE: Anonymous sign-in is no longer part of this interface.
+/// Authentication is handled separately by [BaseAuthProvider] (shared package).
 abstract class BaseChatRepository {
-  /// Signs in anonymously and returns the user's UID.
-  /// If a session already exists the existing UID is returned unchanged.
-  Future<String> signInAnonymously();
 
   /// Creates a new chat room for the given [userId] / [profileId] pair
   /// and returns its generated [chatId].

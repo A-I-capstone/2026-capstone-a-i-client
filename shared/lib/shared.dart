@@ -1,5 +1,4 @@
-/// A Calculator.
-class Calculator {
-  /// Returns [value] plus 1.
-  int addOne(int value) => value + 1;
-}
+library shared;
+
+export 'services/auth/base_auth_provider.dart';
+export 'services/auth/firebase_auth_provider.dart';

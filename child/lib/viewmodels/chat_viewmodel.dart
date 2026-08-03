@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:shared/shared.dart';
 
 import '../models/chat_message.dart';
 import '../models/chat_session.dart';
@@ -23,14 +24,17 @@ class ChatViewModel extends ChangeNotifier {
   final ProviderManager _providerManager;
   final BaseChatRepository _repository;
   final ProfileViewModel _profileViewModel;
+  final BaseAuthProvider _authProvider;
 
   ChatViewModel({
     required ProviderManager providerManager,
     required BaseChatRepository repository,
     required ProfileViewModel profileViewModel,
+    required BaseAuthProvider authProvider,
   }) : _providerManager = providerManager,
        _repository = repository,
-       _profileViewModel = profileViewModel;
+       _profileViewModel = profileViewModel,
+       _authProvider = authProvider;
 
   // ---------------------------------------------------------------------------
   // State
@@ -98,7 +102,7 @@ class ChatViewModel extends ChangeNotifier {
   Future<String> signInAndGetUserId() async {
     if (_userId.isNotEmpty) return _userId;
     try {
-      _userId = await _repository.signInAnonymously();
+      _userId = await _authProvider.signInAnonymously();
     } catch (e, st) {
       debugPrint('[ChatViewModel] signInAndGetUserId() 오류: $e\n$st');
     }
@@ -124,7 +128,7 @@ class ChatViewModel extends ChangeNotifier {
       // 1. Obtain user ID via anonymous sign-in (reuses cached value if already
       //    set by [signInAndGetUserId] called from ChatView.initState).
       if (_userId.isEmpty) {
-        _userId = await _repository.signInAnonymously();
+        _userId = await _authProvider.signInAnonymously();
       }
 
       // 2. Create a brand-new chat session under the active profile.

@@ -7,9 +7,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:103993825834:android:088eab52a0802ab274c153",
+        "mobilesdk_app_id": "1:103993825834:android:ee277152a7066ff074c153",
         "android_client_info": {
-          "package_name": "com.capstone_ai_client.child"
+          "package_name": "com.capstone_ai_client.parent"
         }
       },
       "oauth_client": [],
@@ -26,9 +26,9 @@
     },
     {
       "client_info": {
-        "mobilesdk_app_id": "1:103993825834:android:ee277152a7066ff074c153",
+        "mobilesdk_app_id": "1:103993825834:android:088eab52a0802ab274c153",
         "android_client_info": {
-          "package_name": "com.capstone_ai_client.parent"
+          "package_name": "com.capstone_ai_client.child"
         }
       },
       "oauth_client": [],

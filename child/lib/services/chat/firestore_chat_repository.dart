@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../models/chat_message.dart';
@@ -20,12 +19,10 @@ import 'base_chat_repository.dart';
 ///               ├── text:      String
 ///               └── createdAt: Timestamp
 class FirestoreChatRepository implements BaseChatRepository {
-  final FirebaseAuth _auth;
   final FirebaseFirestore _firestore;
 
-  FirestoreChatRepository({FirebaseAuth? auth, FirebaseFirestore? firestore})
-      : _auth = auth ?? FirebaseAuth.instance,
-        _firestore = firestore ?? FirebaseFirestore.instance;
+  FirestoreChatRepository({FirebaseFirestore? firestore})
+      : _firestore = firestore ?? FirebaseFirestore.instance;
 
   // ---------------------------------------------------------------------------
   // Helpers
@@ -45,20 +42,6 @@ class FirestoreChatRepository implements BaseChatRepository {
   // ---------------------------------------------------------------------------
   // BaseChatRepository implementation
   // ---------------------------------------------------------------------------
-
-  @override
-  Future<String> signInAnonymously() async {
-    try {
-      final existingUser = _auth.currentUser;
-      if (existingUser != null) return existingUser.uid;
-
-      final credential = await _auth.signInAnonymously();
-      return credential.user?.uid ?? '';
-    } catch (e, st) {
-      debugPrint('[FirestoreChatRepository] signInAnonymously error: $e\n$st');
-      return '';
-    }
-  }
 
   @override
   Future<String> createChat(String userId, String profileId) async {
