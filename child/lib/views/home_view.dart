@@ -89,9 +89,9 @@ class _HomeHeader extends StatelessWidget {
             size: 32,
           ),
           onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const SettingsView()),
-            );
+            Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const SettingsView()));
           },
         ),
         BouncyButton(
@@ -99,7 +99,11 @@ class _HomeHeader extends StatelessWidget {
           foregroundColor: AppColors.surface,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           label: '새 과제 추가',
-          icon: const Icon(Icons.add_rounded, color: AppColors.surface, size: 24),
+          icon: const Icon(
+            Icons.add_rounded,
+            color: AppColors.surface,
+            size: 24,
+          ),
           onTap: () {
             TaskAddEditSheet.show(
               context,
@@ -163,7 +167,7 @@ class _UrgentTaskAlert extends StatelessWidget {
   }
 }
 
-/// Task summary counter text.
+/// Task summary counter text wrapped in a dismissible card.
 class _TaskSummarySection extends StatelessWidget {
   const _TaskSummarySection();
 
@@ -171,21 +175,46 @@ class _TaskSummarySection extends StatelessWidget {
   Widget build(BuildContext context) {
     final viewModel = context.watch<HomeViewModel>();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('☆', style: TextStyle(fontSize: 24, color: AppColors.ink)),
-        const SizedBox(height: 4),
-        Text(
-          '${viewModel.remainingTasksCount}개의 과제가 남아 있어요\n'
-          '${viewModel.dueThisWeekCount}개의 과제의 마감기한이 이번 주 안이에요',
-          style: AppTypography.headlineMedium.copyWith(
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            height: 1.35,
+    if (!viewModel.isSummaryVisible) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.ink, width: 2),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Align(
+            alignment: Alignment.topRight,
+            child: GestureDetector(
+              onTap: () => context.read<HomeViewModel>().dismissSummary(),
+              child: const Icon(
+                Icons.close_rounded,
+                color: AppColors.ink,
+                size: 24,
+              ),
+            ),
           ),
-        ),
-      ],
+          const SizedBox(height: 2),
+          const Text('✦', style: TextStyle(fontSize: 22, color: AppColors.ink)),
+          const SizedBox(height: 6),
+          Text(
+            '${viewModel.remainingTasksCount}개의 과제가 남아 있어요.\n'
+            '${viewModel.dueThisWeekCount}개의 과제의 마감기한이 이번 주 안이에요.',
+            style: AppTypography.headlineMedium.copyWith(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              height: 1.35,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -201,9 +230,12 @@ class _TaskControlBar extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          '해야 할 과제',
-          style: AppTypography.headlineMedium.copyWith(fontSize: 22),
+        Padding(
+          padding: const EdgeInsets.only(left: 5),
+          child: Text(
+            '과제 목록',
+            style: AppTypography.headlineMedium.copyWith(fontSize: 22),
+          ),
         ),
         DropdownButton<TaskSortOption>(
           value: viewModel.sortOption,
@@ -212,11 +244,11 @@ class _TaskControlBar extends StatelessWidget {
           items: const [
             DropdownMenuItem(
               value: TaskSortOption.dueDate,
-              child: Text('마감기한순', style: AppTypography.bodyMedium),
+              child: Text('마감 기한 순', style: AppTypography.bodyMedium),
             ),
             DropdownMenuItem(
               value: TaskSortOption.createdDate,
-              child: Text('최신생성순', style: AppTypography.bodyMedium),
+              child: Text('최신 생성 순', style: AppTypography.bodyMedium),
             ),
           ],
           onChanged: (val) {
@@ -266,16 +298,13 @@ class _TaskListSection extends StatelessWidget {
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       sliver: SliverList(
-        delegate: SliverChildBuilderDelegate(
-          (context, index) {
-            final task = tasks[index];
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _TaskRowTile(task: task),
-            );
-          },
-          childCount: tasks.length,
-        ),
+        delegate: SliverChildBuilderDelegate((context, index) {
+          final task = tasks[index];
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _TaskRowTile(task: task),
+          );
+        }, childCount: tasks.length),
       ),
     );
   }
@@ -337,7 +366,7 @@ class _TaskRowTile extends StatelessWidget {
                         const SizedBox(height: 2),
                         Text(
                           task.isDueToday
-                              ? '(마감기한: ★★★오늘★★★)'
+                              ? '(마감기한: 오늘)'
                               : '(마감기한: ${task.dueDate!.month}월 ${task.dueDate!.day}일)',
                           style: AppTypography.bodyMedium.copyWith(
                             fontSize: 13,
@@ -352,8 +381,11 @@ class _TaskRowTile extends StatelessWidget {
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.delete_outline_rounded,
-                      color: AppColors.clay, size: 22),
+                  icon: const Icon(
+                    Icons.delete_outline_rounded,
+                    color: AppColors.clay,
+                    size: 22,
+                  ),
                   onPressed: () => viewModel.deleteTask(task.id),
                 ),
               ],
@@ -409,20 +441,23 @@ class _TaskRowTile extends StatelessWidget {
           Container(
             width: double.infinity,
             decoration: const BoxDecoration(
-              border: Border(
-                top: BorderSide(color: AppColors.ink, width: 1.5),
-              ),
+              border: Border(top: BorderSide(color: AppColors.ink, width: 1.5)),
             ),
             child: InkWell(
               onTap: () => _navigateToChat(context, task),
-              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(14)),
+              borderRadius: const BorderRadius.vertical(
+                bottom: Radius.circular(14),
+              ),
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.chat_bubble_outline_rounded,
-                        color: AppColors.ink, size: 20),
+                    const Icon(
+                      Icons.chat_bubble_outline_rounded,
+                      color: AppColors.ink,
+                      size: 20,
+                    ),
                     const SizedBox(width: 8),
                     Text(
                       'AI 학습 도움 받기',
@@ -432,8 +467,11 @@ class _TaskRowTile extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 4),
-                    const Icon(Icons.chevron_right_rounded,
-                        color: AppColors.ink, size: 20),
+                    const Icon(
+                      Icons.chevron_right_rounded,
+                      color: AppColors.ink,
+                      size: 20,
+                    ),
                   ],
                 ),
               ),
@@ -488,9 +526,7 @@ class _HomeBottomBar extends StatelessWidget {
     return Container(
       decoration: const BoxDecoration(
         color: AppColors.surface,
-        border: Border(
-          top: BorderSide(color: AppColors.ink, width: 2),
-        ),
+        border: Border(top: BorderSide(color: AppColors.ink, width: 2)),
       ),
       child: const SafeArea(
         child: Row(
