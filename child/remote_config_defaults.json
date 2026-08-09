@@ -19,8 +19,6 @@
   "settings_section_account": "계정 관리",
   "settings_account_name": "내 친구",
   "settings_account_edit_profile": "프로필 변경하기",
-  "settings_section_voice": "음성",
-  "settings_voice_prompt": "어떤 목소리로 이야기할까요?",
   "settings_section_text": "글자 설정",
   "settings_text_size_label": "글자 크기",
   "settings_font_label": "폰트",

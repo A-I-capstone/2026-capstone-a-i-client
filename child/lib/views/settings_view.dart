@@ -36,8 +36,6 @@ class SettingsView extends StatelessWidget {
           children: const [
             _AccountSection(),
             SizedBox(height: 32),
-            _VoiceSection(),
-            SizedBox(height: 32),
             _TextSettingsSection(),
             SizedBox(height: 32),
             _HelpSection(),
@@ -129,81 +127,6 @@ class _AccountSection extends StatelessWidget {
               size: 32,
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── Voice section ──────────────────────────────────────────────────────────
-
-class _VoiceSection extends StatelessWidget {
-  const _VoiceSection();
-
-  @override
-  Widget build(BuildContext context) {
-    final viewModel = context.watch<SettingsViewModel>();
-    final voices = viewModel.availableVoices;
-
-    return _SettingsCard(
-      title: '음성',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('어떤 목소리로 이야기할까요?', style: AppTypography.bodyLarge),
-          const SizedBox(height: 16),
-          if (voices.isEmpty)
-            Text(
-              '기기에서 한국어 음성을 불러오는 중이에요...',
-              style: AppTypography.bodyMedium.copyWith(color: AppColors.slate),
-            )
-          else
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: voices.map((voice) {
-                final isSelected = viewModel.ttsVoice == voice;
-                return _VoiceChip(
-                  voice: voice,
-                  isSelected: isSelected,
-                  onTap: () =>
-                      context.read<SettingsViewModel>().setTtsVoice(voice),
-                );
-              }).toList(),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _VoiceChip extends StatelessWidget {
-  final String voice;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _VoiceChip({
-    required this.voice,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.tangerine : AppColors.surface,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: AppColors.ink, width: 2),
-        ),
-        child: Text(
-          voice,
-          style: AppTypography.bodyLarge.copyWith(
-            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
-          ),
         ),
       ),
     );
