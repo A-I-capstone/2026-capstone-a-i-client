@@ -1,3 +1,5 @@
+import 'package:flame/cache.dart';
+import 'package:flame/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -17,10 +19,7 @@ class VillageHud extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: const [
-            _CoinBadge(),
-            _BackButton(),
-          ],
+          children: const [_CoinBadge(), _BackButton()],
         ),
       ),
     );
@@ -34,20 +33,12 @@ class _CoinBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final coins = context.select<VillageViewModel, int>((vm) => vm.coins);
 
-    return Container(
+    return NineTileBoxWidget.asset(
+      path: 'assets/game/image/icons/Button.png',
+      images: Images(prefix: ''),
+      tileSize: 10,
+      destTileSize: 10,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.ink, width: 2),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x1F000000),
-            blurRadius: 4,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -66,10 +57,11 @@ class _CoinBadge extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Text(
-            '$coins 코인',
+            '$coins',
             style: AppTypography.headlineMedium.copyWith(
               fontSize: 18,
               color: AppColors.ink,
+              fontWeight: FontWeight.bold,
             ),
           ),
         ],

@@ -26,8 +26,8 @@ class PlacementSlot {
 
 /// Service class providing grid topology logic, occupancy calculations, and placement validation.
 class VillagePlacementValidator {
-  static const int mapWidthTiles = 33;
-  static const int mapHeightTiles = 13;
+  static const int mapWidthTiles = 17;
+  static const int mapHeightTiles = 25;
 
   /// Returns true if coordinate [x, y] is a road tile.
   static bool isRoadTile(int x, int y) {
@@ -54,7 +54,8 @@ class VillagePlacementValidator {
 
     for (final placed in placedItems) {
       final itemDef = itemDefinitions[placed.itemId];
-      final rule = itemDef?.placementRule ??
+      final rule =
+          itemDef?.placementRule ??
           const PlacementRule(
             tileWidth: 1,
             tileHeight: 1,
@@ -86,9 +87,12 @@ class VillagePlacementValidator {
     final slots = <PlacementSlot>[];
 
     if (rule.snapToPlot && rule.tileWidth == 3 && rule.tileHeight == 2) {
-      // Snapping to pre-defined 2x3 grass plots (8 columns x 4 rows = 32 plots)
-      for (int gy = 0; gy < 4; gy++) {
-        for (int gx = 0; gx < 8; gx++) {
+      final numPlotsX = (mapWidthTiles - 1) ~/ 4;
+      final numPlotsY = (mapHeightTiles - 1) ~/ 3;
+
+      // Snapping to pre-defined 2x3 grass plots
+      for (int gy = 0; gy < numPlotsY; gy++) {
+        for (int gx = 0; gx < numPlotsX; gx++) {
           final originX = 4 * gx + 1;
           final originY = 3 * gy + 1;
 
@@ -100,12 +104,14 @@ class VillagePlacementValidator {
             surface: rule.allowedSurface,
             occupied: occupied,
           )) {
-            slots.add(PlacementSlot(
-              originX: originX,
-              originY: originY,
-              width: rule.tileWidth,
-              height: rule.tileHeight,
-            ));
+            slots.add(
+              PlacementSlot(
+                originX: originX,
+                originY: originY,
+                width: rule.tileWidth,
+                height: rule.tileHeight,
+              ),
+            );
           }
         }
       }
@@ -121,12 +127,14 @@ class VillagePlacementValidator {
             surface: rule.allowedSurface,
             occupied: occupied,
           )) {
-            slots.add(PlacementSlot(
-              originX: x,
-              originY: y,
-              width: rule.tileWidth,
-              height: rule.tileHeight,
-            ));
+            slots.add(
+              PlacementSlot(
+                originX: x,
+                originY: y,
+                width: rule.tileWidth,
+                height: rule.tileHeight,
+              ),
+            );
           }
         }
       }

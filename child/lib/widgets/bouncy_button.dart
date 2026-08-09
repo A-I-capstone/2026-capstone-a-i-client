@@ -7,6 +7,7 @@ import '../theme/app_typography.dart';
 class BouncyButton extends StatefulWidget {
   final String? label;
   final Widget? icon;
+  final Widget? child;
   final VoidCallback? onTap;
   final Color backgroundColor;
   final Color foregroundColor;
@@ -17,6 +18,7 @@ class BouncyButton extends StatefulWidget {
     super.key,
     this.label,
     this.icon,
+    this.child,
     this.onTap,
     this.backgroundColor = AppColors.ink,
     this.foregroundColor = AppColors.surface,
@@ -72,6 +74,7 @@ class _BouncyButtonState extends State<BouncyButton>
         child: _ButtonContainer(
           label: widget.label,
           icon: widget.icon,
+          childWidget: widget.child,
           backgroundColor: widget.backgroundColor,
           foregroundColor: widget.foregroundColor,
           isCircle: widget.isCircle,
@@ -85,6 +88,7 @@ class _BouncyButtonState extends State<BouncyButton>
 class _ButtonContainer extends StatelessWidget {
   final String? label;
   final Widget? icon;
+  final Widget? childWidget;
   final Color backgroundColor;
   final Color foregroundColor;
   final bool isCircle;
@@ -93,6 +97,7 @@ class _ButtonContainer extends StatelessWidget {
   const _ButtonContainer({
     required this.label,
     required this.icon,
+    required this.childWidget,
     required this.backgroundColor,
     required this.foregroundColor,
     required this.isCircle,
@@ -101,6 +106,9 @@ class _ButtonContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (childWidget case final customChild?) {
+      return customChild;
+    }
     final ShapeBorder shape = isCircle
         ? const CircleBorder()
         : const StadiumBorder();

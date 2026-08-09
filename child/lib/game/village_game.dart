@@ -1,4 +1,5 @@
 import 'package:flame/events.dart';
+import 'package:flame/experimental.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 
@@ -28,7 +29,18 @@ class VillageGame extends FlameGame with TapCallbacks, ScaleDetector {
     _tileMapComponent = TileMapComponent();
     await world.add(_tileMapComponent);
 
-    // Center camera on 33x13 map center (528, 208)
+    // Restrict camera to map boundaries (fixed bounds regardless of zoom)
+    camera.setBounds(
+      Rectangle.fromLTWH(
+        0,
+        0,
+        _tileMapComponent.size.x,
+        _tileMapComponent.size.y,
+      ),
+      considerViewport: false,
+    );
+
+    // Center camera on map center
     final mapCenter = _tileMapComponent.size / 2;
     camera.moveTo(mapCenter);
 
@@ -59,7 +71,8 @@ class VillageGame extends FlameGame with TapCallbacks, ScaleDetector {
     for (final placed in viewModel.placedItems) {
       final definition = viewModel.getItemById(placed.itemId);
       if (definition != null) {
-        final isHighlighted = viewModel.pendingSellInstanceId == placed.instanceId;
+        final isHighlighted =
+            viewModel.pendingSellInstanceId == placed.instanceId;
         final comp = PlacedItemComponent(
           placedItem: placed,
           itemDefinition: definition,
@@ -108,7 +121,7 @@ class VillageGame extends FlameGame with TapCallbacks, ScaleDetector {
 
     // Two-finger pinch zoom
     if (info.scale.global.x != 1.0) {
-      final targetZoom = (_startZoom * info.scale.global.x).clamp(0.4, 2.5);
+      final targetZoom = (_startZoom * info.scale.global.x).clamp(0.7, 1.8);
       camera.viewfinder.zoom = targetZoom;
     }
   }
