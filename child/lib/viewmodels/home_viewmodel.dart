@@ -3,10 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../models/task.dart';
 import '../services/task/base_task_repository.dart';
 
-enum TaskSortOption {
-  dueDate,
-  createdDate,
-}
+enum TaskSortOption { dueDate, createdDate }
 
 /// ViewModel managing state and business logic for [HomeView].
 class HomeViewModel extends ChangeNotifier {
@@ -16,6 +13,7 @@ class HomeViewModel extends ChangeNotifier {
   List<Task> _tasks = [];
   bool _isLoading = false;
   bool _isUrgentAlertDismissed = false;
+  bool _isSummaryDismissed = false;
   TaskSortOption _sortOption = TaskSortOption.dueDate;
 
   StreamSubscription<List<Task>>? _tasksSubscription;
@@ -23,8 +21,8 @@ class HomeViewModel extends ChangeNotifier {
   HomeViewModel({
     required BaseTaskRepository taskRepository,
     required String userId,
-  })  : _taskRepository = taskRepository,
-        _userId = userId {
+  }) : _taskRepository = taskRepository,
+       _userId = userId {
     _initStream();
   }
 
@@ -58,15 +56,16 @@ class HomeViewModel extends ChangeNotifier {
   int get remainingTasksCount =>
       _tasks.where((task) => !task.isCompleted).length;
 
-  int get dueThisWeekCount => _tasks
-      .where((task) => !task.isCompleted && task.isDueThisWeek)
-      .length;
+  int get dueThisWeekCount =>
+      _tasks.where((task) => !task.isCompleted && task.isDueThisWeek).length;
 
   bool get hasUrgentTask =>
       !_isUrgentAlertDismissed &&
       _tasks.any((task) => !task.isCompleted && task.isDueToday);
 
-  String get urgentTaskMessage => '!!! 오늘이 마감일인 과제가 있어요!!!';
+  String get urgentTaskMessage => '오늘이 마감일인 과제가 있어요!';
+
+  bool get isSummaryVisible => !_isSummaryDismissed;
 
   // ---------------------------------------------------------------------------
   // Methods
@@ -78,18 +77,20 @@ class HomeViewModel extends ChangeNotifier {
     notifyListeners();
 
     _tasksSubscription?.cancel();
-    _tasksSubscription = _taskRepository.streamTasks(_userId).listen(
-      (loadedTasks) {
-        _tasks = loadedTasks;
-        _isLoading = false;
-        notifyListeners();
-      },
-      onError: (error) {
-        debugPrint('[HomeViewModel] Stream error: $error');
-        _isLoading = false;
-        notifyListeners();
-      },
-    );
+    _tasksSubscription = _taskRepository
+        .streamTasks(_userId)
+        .listen(
+          (loadedTasks) {
+            _tasks = loadedTasks;
+            _isLoading = false;
+            notifyListeners();
+          },
+          onError: (error) {
+            debugPrint('[HomeViewModel] Stream error: $error');
+            _isLoading = false;
+            notifyListeners();
+          },
+        );
   }
 
   void setSortOption(TaskSortOption option) {
@@ -97,11 +98,20 @@ class HomeViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> addTask(String title, DateTime? dueDate, List<String> subtaskTitles) async {
+  Future<void> addTask(
+    String title,
+    DateTime? dueDate,
+    List<String> subtaskTitles,
+  ) async {
     try {
       final subtasks = subtaskTitles
           .where((t) => t.trim().isNotEmpty)
-          .map((t) => SubTask(id: 'st_${DateTime.now().microsecondsSinceEpoch}', title: t.trim()))
+          .map(
+            (t) => SubTask(
+              id: 'st_${DateTime.now().microsecondsSinceEpoch}',
+              title: t.trim(),
+            ),
+          )
           .toList();
 
       final newTask = Task(
@@ -156,6 +166,11 @@ class HomeViewModel extends ChangeNotifier {
 
   void dismissUrgentAlert() {
     _isUrgentAlertDismissed = true;
+    notifyListeners();
+  }
+
+  void dismissSummary() {
+    _isSummaryDismissed = true;
     notifyListeners();
   }
 
