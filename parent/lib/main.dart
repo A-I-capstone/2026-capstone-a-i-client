@@ -7,7 +7,7 @@ import 'package:shared/shared.dart';
 import 'firebase_options.dart';
 import 'theme/app_theme.dart';
 import 'viewmodels/onboarding_viewmodel.dart';
-import 'views/home_view.dart';
+import 'views/child_list_view.dart';
 import 'views/pairing_view.dart';
 import 'views/terms_view.dart';
 
@@ -84,10 +84,11 @@ class ParentApp extends StatelessWidget {
             );
           }
 
-          // Step 3: Main Home View
-          return const HomeView();
+          // Step 3: Child Selection List View
+          return ChildListView(parentUid: parentUid);
         },
       ),
     );
   }
 }
+

@@ -7,6 +7,7 @@ import '../theme/app_typography.dart';
 class BouncyButton extends StatefulWidget {
   final String? label;
   final Widget? icon;
+  final Widget? child;
   final VoidCallback? onTap;
   final Color backgroundColor;
   final Color foregroundColor;
@@ -17,12 +18,14 @@ class BouncyButton extends StatefulWidget {
     super.key,
     this.label,
     this.icon,
+    this.child,
     this.onTap,
     this.backgroundColor = AppColors.ink,
     this.foregroundColor = AppColors.surface,
     this.isCircle = false,
     this.padding,
   });
+
 
   @override
   State<BouncyButton> createState() => _BouncyButtonState();
@@ -69,14 +72,15 @@ class _BouncyButtonState extends State<BouncyButton>
       onTapCancel: widget.onTap != null ? _onTapCancel : null,
       child: ScaleTransition(
         scale: _scaleAnimation,
-        child: _ButtonContainer(
-          label: widget.label,
-          icon: widget.icon,
-          backgroundColor: widget.backgroundColor,
-          foregroundColor: widget.foregroundColor,
-          isCircle: widget.isCircle,
-          padding: widget.padding,
-        ),
+        child: widget.child ??
+            _ButtonContainer(
+              label: widget.label,
+              icon: widget.icon,
+              backgroundColor: widget.backgroundColor,
+              foregroundColor: widget.foregroundColor,
+              isCircle: widget.isCircle,
+              padding: widget.padding,
+            ),
       ),
     );
   }
@@ -138,3 +142,4 @@ class _ButtonContainer extends StatelessWidget {
     );
   }
 }
+
