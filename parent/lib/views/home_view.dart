@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+// TODO: 설정 아이콘을 더 "아동용 설정"에 맞는 느낌으로 변경
+
 /// Parent App Main Home View.
 ///
 /// Features:

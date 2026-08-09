@@ -1,3 +1,5 @@
+import 'package:flame/cache.dart';
+import 'package:flame/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -74,28 +76,35 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final contentColor = isActive ? AppColors.marigold : AppColors.ink;
+
     return BouncyButton(
-      backgroundColor: isActive ? AppColors.ink : color,
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
       onTap: onTap,
-      icon: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            color: isActive ? AppColors.surface : AppColors.ink,
-            size: 22,
-          ),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: AppTypography.headlineMedium.copyWith(
-              fontSize: 15,
-              color: isActive ? AppColors.surface : AppColors.ink,
-              fontWeight: FontWeight.bold,
+      child: NineTileBoxWidget.asset(
+        path: 'assets/game/image/icons/Button.png',
+        images: Images(prefix: ''),
+        tileSize: 10,
+        destTileSize: 10,
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              color: contentColor,
+              size: 22,
             ),
-          ),
-        ],
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: AppTypography.headlineMedium.copyWith(
+                fontSize: 15,
+                color: contentColor,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
