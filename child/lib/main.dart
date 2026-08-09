@@ -3,29 +3,22 @@ import 'package:provider/provider.dart';
 import 'package:shared/shared.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'theme/app_theme.dart';
-import 'viewmodels/chat_viewmodel.dart';
 import 'viewmodels/settings_viewmodel.dart';
 import 'viewmodels/user_viewmodel.dart';
-import 'views/chat_view.dart';
 import 'views/child_pairing_view.dart';
+import 'views/home_view.dart';
 import 'views/nickname_setup_view.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'firebase_options.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
-import 'services/chat/base_chat_repository.dart';
-import 'services/chat/firestore_chat_repository.dart';
 import 'services/user/user_repository.dart';
-import 'services/llm/gemini_provider.dart';
-import 'services/llm/provider_manager.dart';
 
 const _kPairingComplete = 'pairing_complete';
 
 late final String _modelName;
 late final String _systemPrompt;
-late final String _titleModelName;
-late final String _titleSystemPrompt;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -45,7 +38,6 @@ void main() async {
 
   await remoteConfig.setDefaults(const {
     "model_name": "gemini-3.6-flash",
-    "title_model_name": "gemini-3.5-flash-lite",
   });
 
   try {
@@ -56,8 +48,6 @@ void main() async {
 
   _modelName = remoteConfig.getString('model_name');
   _systemPrompt = remoteConfig.getString('system_prompt');
-  _titleModelName = remoteConfig.getString('title_model_name');
-  _titleSystemPrompt = remoteConfig.getString('title_system_prompt');
 
   if (_systemPrompt.isEmpty) {
     throw Exception(
@@ -73,8 +63,6 @@ void main() async {
     await remoteConfig.activate();
     _modelName = remoteConfig.getString("model_name");
     _systemPrompt = remoteConfig.getString("system_prompt");
-    _titleModelName = remoteConfig.getString("title_model_name");
-    _titleSystemPrompt = remoteConfig.getString("title_system_prompt");
   });
 
   // Auth
@@ -85,21 +73,7 @@ void main() async {
   final prefs = await SharedPreferences.getInstance();
   final isPaired = prefs.getBool(_kPairingComplete) ?? false;
 
-  // Repositories & Managers
-  final providerManager = ProviderManager(
-    provider: GeminiProvider(
-      modelName: _modelName,
-      systemPrompt: _systemPrompt,
-    ),
-    titleProvider: GeminiProvider(
-      modelName: _titleModelName,
-      systemPrompt: _titleSystemPrompt,
-    ),
-  );
-
-  final BaseChatRepository chatRepository = FirestoreChatRepository();
   final userRepository = UserRepository();
-
   final userViewModel = UserViewModel(repository: userRepository);
 
   final settingsViewModel = SettingsViewModel();
@@ -112,14 +86,6 @@ void main() async {
         ChangeNotifierProvider<UserViewModel>.value(value: userViewModel),
         ChangeNotifierProvider<SettingsViewModel>.value(
           value: settingsViewModel,
-        ),
-        ChangeNotifierProvider(
-          create: (_) => ChatViewModel(
-            providerManager: providerManager,
-            repository: chatRepository,
-            userViewModel: userViewModel,
-            authProvider: authProvider,
-          ),
         ),
       ],
       child: CapstoneAiApp(
@@ -164,13 +130,13 @@ class CapstoneAiApp extends StatelessWidget {
         );
       },
       home: isPaired
-          ? const ChatView()
+          ? const HomeView()
           : _PairingGate(userId: userId, prefs: prefs),
     );
   }
 }
 
-/// Gate handling ChildPairingView -> NicknameSetupView -> ChatView flow.
+/// Gate handling ChildPairingView -> NicknameSetupView -> HomeView flow.
 class _PairingGate extends StatefulWidget {
   final String userId;
   final SharedPreferences prefs;
@@ -194,7 +160,7 @@ class _PairingGateState extends State<_PairingGate> {
             builder: (_) => NicknameSetupView(
               onCompleted: () {
                 navigator.pushReplacement(
-                  MaterialPageRoute(builder: (_) => const ChatView()),
+                  MaterialPageRoute(builder: (_) => const HomeView()),
                 );
               },
             ),

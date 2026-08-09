@@ -4,52 +4,40 @@ import 'package:flutter/foundation.dart';
 import 'package:shared/shared.dart';
 
 import '../models/chat_message.dart';
-import '../models/chat_session.dart';
+import '../models/task.dart';
 import '../services/chat/base_chat_repository.dart';
 import '../services/llm/provider_manager.dart';
-import 'user_viewmodel.dart';
 
-/// ViewModel managing chat state and business logic.
-/// Extends ChangeNotifier and strictly avoids importing material.dart or
-/// referencing BuildContext.
-///
-/// Depends on [BaseChatRepository] and [UserViewModel].
+/// ViewModel managing per-task chat state and business logic.
 class ChatViewModel extends ChangeNotifier {
   final ProviderManager _providerManager;
   final BaseChatRepository _repository;
-  final UserViewModel _userViewModel;
   final BaseAuthProvider _authProvider;
 
-  ChatViewModel({
-    required ProviderManager providerManager,
-    required BaseChatRepository repository,
-    required UserViewModel userViewModel,
-    required BaseAuthProvider authProvider,
-  })  : _providerManager = providerManager,
-        _repository = repository,
-        _userViewModel = userViewModel,
-        _authProvider = authProvider;
+  final Task task;
 
-  // ---------------------------------------------------------------------------
-  // State
-  // ---------------------------------------------------------------------------
-
+  String _userId = '';
   final List<ChatMessage> _messages = [];
   final List<ChatMessage> _historyWindow = [];
   static const int _historyWindowSize = 10;
-
-  String _userId = '';
-  String _chatId = '';
 
   bool _isListening = false;
   bool _isLoading = false;
   bool _isInitialized = false;
 
-  final List<ChatSession> _chatSessions = [];
-  bool _isLoadingSessions = false;
-
   String _streamingBuffer = '';
   bool _isStreaming = false;
+
+  ChatViewModel({
+    required ProviderManager providerManager,
+    required BaseChatRepository repository,
+    required BaseAuthProvider authProvider,
+    required this.task,
+    required String userId,
+  })  : _providerManager = providerManager,
+        _repository = repository,
+        _authProvider = authProvider,
+        _userId = userId;
 
   // ---------------------------------------------------------------------------
   // Public getters
@@ -60,25 +48,8 @@ class ChatViewModel extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isInitialized => _isInitialized;
 
-  List<ChatSession> get chatSessions => List.unmodifiable(_chatSessions);
-  bool get isLoadingSessions => _isLoadingSessions;
-
   String get streamingBuffer => _streamingBuffer;
   bool get isStreaming => _isStreaming;
-
-  // ---------------------------------------------------------------------------
-  // Sign-in helper
-  // ---------------------------------------------------------------------------
-
-  Future<String> signInAndGetUserId() async {
-    if (_userId.isNotEmpty) return _userId;
-    try {
-      _userId = await _authProvider.signInAnonymously();
-    } catch (e, st) {
-      debugPrint('[ChatViewModel] signInAndGetUserId() 오류: $e\n$st');
-    }
-    return _userId;
-  }
 
   // ---------------------------------------------------------------------------
   // Initialization
@@ -95,11 +66,12 @@ class ChatViewModel extends ChangeNotifier {
         _userId = await _authProvider.signInAnonymously();
       }
 
-      await _userViewModel.initialize(_userId);
+      final loaded = await _repository.loadMessages(
+        _userId,
+        task.id,
+        task.chatId,
+      );
 
-      _chatId = await _repository.createChat(_userId);
-
-      final loaded = await _repository.loadMessages(_userId, _chatId);
       _messages
         ..clear()
         ..addAll(loaded);
@@ -113,12 +85,8 @@ class ChatViewModel extends ChangeNotifier {
         );
 
       _isInitialized = true;
-
-      unawaited(_deleteEmptyChats(exceptions: [_chatId]));
-    } catch (_) {
-      debugPrint(
-        '[ChatViewModel] initialize() failed; continuing without history.',
-      );
+    } catch (e) {
+      debugPrint('[ChatViewModel] initialize() failed: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -138,8 +106,6 @@ class ChatViewModel extends ChangeNotifier {
     final trimmedText = text.trim();
     if (trimmedText.isEmpty) return;
 
-    final isFirstMessage = _messages.isEmpty;
-
     final userMsg = ChatMessage(
       id: 'user_${DateTime.now().millisecondsSinceEpoch}',
       sender: MessageSender.user,
@@ -154,22 +120,24 @@ class ChatViewModel extends ChangeNotifier {
     _streamingBuffer = '';
     notifyListeners();
 
-    unawaited(_repository.saveMessage(_userId, _chatId, userMsg));
+    unawaited(_repository.saveMessage(_userId, task.id, task.chatId, userMsg));
 
-    if (isFirstMessage) {
-      unawaited(_generateAndSetChatTitle(trimmedText));
-    }
+    // Construct prompt context with Task info
+    final subtaskInfo = task.subtasks.isEmpty
+        ? '세부 과제 없음'
+        : task.subtasks.map((s) => '- ${s.title} (${s.isCompleted ? "완료" : "미완료"})').join('\n');
+
+    final contextPrompt = '[과제 정보]\n- 과제 제목: ${task.title}\n- 세부 과제:\n$subtaskInfo\n\n[사용자 질문]\n$trimmedText';
 
     try {
-      debugPrint('[ChatViewModel] sendMessage() → AI 스트리밍 시작');
+      debugPrint('[ChatViewModel] sendMessage() → Task AI 스트리밍 시작');
       await for (final chunk in _providerManager.sendMessageStream(
-        trimmedText,
+        contextPrompt,
         history: List.of(_historyWindow),
       )) {
         _streamingBuffer += chunk;
         notifyListeners();
       }
-      debugPrint('[ChatViewModel] AI 스트리밍 완료 (총 길이: ${_streamingBuffer.length}자)');
 
       final aiMsg = ChatMessage(
         id: 'ai_${DateTime.now().millisecondsSinceEpoch}',
@@ -181,7 +149,7 @@ class ChatViewModel extends ChangeNotifier {
       _messages.add(aiMsg);
       _addToHistoryWindow(aiMsg);
 
-      unawaited(_repository.saveMessage(_userId, _chatId, aiMsg));
+      unawaited(_repository.saveMessage(_userId, task.id, task.chatId, aiMsg));
     } catch (e, st) {
       debugPrint('[ChatViewModel] AI 스트리밍 중 오류 발생: $e\n$st');
       _messages.add(
@@ -197,128 +165,6 @@ class ChatViewModel extends ChangeNotifier {
       _isLoading = false;
       _isStreaming = false;
       notifyListeners();
-    }
-  }
-
-  Future<void> _generateAndSetChatTitle(String firstMessage) async {
-    try {
-      final generatedTitle = await _providerManager.generateTitle(firstMessage);
-      if (generatedTitle.isNotEmpty) {
-        await _repository.updateChatTitle(
-          _userId,
-          _chatId,
-          generatedTitle,
-        );
-        unawaited(loadChatSessions());
-      }
-    } catch (e) {
-      debugPrint('[Title Gen] error: $e');
-    }
-  }
-
-  void clearMessages() {
-    _messages.clear();
-    _historyWindow.clear();
-    notifyListeners();
-  }
-
-  Future<void> startNewChat() async {
-    if (_userId.isEmpty) return;
-    _isLoading = true;
-    notifyListeners();
-    try {
-      final newChatId = await _repository.createChat(_userId);
-      if (newChatId.isEmpty) return;
-
-      _chatId = newChatId;
-      _messages.clear();
-      _historyWindow.clear();
-
-      unawaited(_deleteEmptyChats(exceptions: [newChatId]));
-    } catch (_) {
-      debugPrint(
-        '[ChatViewModel] startNewChat() failed; keeping current session.',
-      );
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
-
-  Future<void> loadChatSessions() async {
-    if (_userId.isEmpty) return;
-    _isLoadingSessions = true;
-    notifyListeners();
-    try {
-      final sessions = await _repository.listChats(_userId);
-      _chatSessions
-        ..clear()
-        ..addAll(
-          sessions.where((s) => !(s.id == _chatId && s.messageCount == 0)),
-        );
-    } catch (e) {
-      debugPrint('[ChatViewModel] loadChatSessions() 오류: $e');
-    } finally {
-      _isLoadingSessions = false;
-      notifyListeners();
-    }
-  }
-
-  Future<void> loadChat(String sessionId) async {
-    if (_userId.isEmpty || sessionId.isEmpty) return;
-    if (_chatId == sessionId) return;
-
-    final previousWasEmpty = _messages.isEmpty;
-
-    _isLoading = true;
-    notifyListeners();
-
-    try {
-      _chatId = sessionId;
-      final loaded = await _repository.loadMessages(
-        _userId,
-        _chatId,
-      );
-      _messages
-        ..clear()
-        ..addAll(loaded);
-
-      _historyWindow
-        ..clear()
-        ..addAll(
-          _messages.length > _historyWindowSize
-              ? _messages.sublist(_messages.length - _historyWindowSize)
-              : List.of(_messages),
-        );
-
-      if (previousWasEmpty) {
-        unawaited(_deleteEmptyChats(exceptions: [_chatId]));
-      }
-    } catch (e) {
-      debugPrint('[ChatViewModel] loadChat() failed: $e');
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
-
-  // ---------------------------------------------------------------------------
-  // Helpers
-  // ---------------------------------------------------------------------------
-
-  Future<void> _deleteEmptyChats({required List<String> exceptions}) async {
-    if (_userId.isEmpty) return;
-    try {
-      final allSessions = await _repository.listChats(_userId);
-      final toDelete = allSessions
-          .where((s) => s.messageCount == 0 && !exceptions.contains(s.id))
-          .toList();
-      if (toDelete.isEmpty) return;
-      for (final session in toDelete) {
-        unawaited(_repository.deleteChat(_userId, session.id));
-      }
-    } catch (e, st) {
-      debugPrint('[ViewModel] _deleteEmptyChats() 오류: $e\n$st');
     }
   }
 
