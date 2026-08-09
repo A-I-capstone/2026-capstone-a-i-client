@@ -75,6 +75,7 @@ void main() async {
 
   final userRepository = UserRepository();
   final userViewModel = UserViewModel(repository: userRepository);
+  await userViewModel.initialize(userId);
 
   final settingsViewModel = SettingsViewModel();
   await settingsViewModel.init();

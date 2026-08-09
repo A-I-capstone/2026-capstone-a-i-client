@@ -4,30 +4,31 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class ChildInfo {
   final String childUid;
   final String familyId;
-  final String nickname;
+  final String name;
   final DateTime pairedAt;
 
   ChildInfo({
     required this.childUid,
     required this.familyId,
-    required this.nickname,
+    required this.name,
     required this.pairedAt,
   });
 
   factory ChildInfo.fromFirestore({
     required String familyId,
     required Map<String, dynamic> familyData,
-    String? nickname,
+    String? name,
   }) {
-    final rawNickname = nickname ?? familyData['nickname'] as String?;
-    final defaultNickname = (rawNickname != null && rawNickname.isNotEmpty)
-        ? rawNickname
-        : '이름 없는 자녀';
+    final rawName = name ??
+        familyData['name'] as String? ??
+        familyData['nickname'] as String?;
+    final defaultName =
+        (rawName != null && rawName.isNotEmpty) ? rawName : '이름 없는 자녀';
 
     return ChildInfo(
       childUid: familyData['childUid'] as String? ?? '',
       familyId: familyId,
-      nickname: defaultNickname,
+      name: defaultName,
       pairedAt: (familyData['pairedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }
