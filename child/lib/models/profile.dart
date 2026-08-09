@@ -1,34 +1,28 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// Data model representing a user profile stored in Firestore at:
-///   users/{deviceUid}/profiles/{profileId}
-class Profile {
-  final String id;
+/// Data model representing child user info stored in Firestore at: `users/{userId}`
+class UserProfile {
+  final String uid;
   final String name;
-
-  /// Avatar URL or asset path. Empty string until avatar upload is implemented.
   final String avatar;
-
   final DateTime createdAt;
 
-  const Profile({
-    required this.id,
+  const UserProfile({
+    required this.uid,
     required this.name,
     this.avatar = '',
     required this.createdAt,
   });
 
-  /// Creates a [Profile] from a Firestore document snapshot.
-  factory Profile.fromFirestore(Map<String, dynamic> data, String id) {
-    return Profile(
-      id: id,
+  factory UserProfile.fromFirestore(Map<String, dynamic> data, String uid) {
+    return UserProfile(
+      uid: uid,
       name: (data['name'] as String?) ?? '내 친구',
       avatar: (data['avatar'] as String?) ?? '',
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }
 
-  /// Converts this profile to a Firestore-compatible map.
   Map<String, dynamic> toFirestore() {
     return {
       'name': name,
@@ -37,10 +31,9 @@ class Profile {
     };
   }
 
-  /// Returns a copy of this profile with the given fields replaced.
-  Profile copyWith({String? name, String? avatar}) {
-    return Profile(
-      id: id,
+  UserProfile copyWith({String? name, String? avatar}) {
+    return UserProfile(
+      uid: uid,
       name: name ?? this.name,
       avatar: avatar ?? this.avatar,
       createdAt: createdAt,

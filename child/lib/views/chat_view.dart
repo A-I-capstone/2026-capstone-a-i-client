@@ -5,12 +5,10 @@ import '../models/chat_session.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 import '../viewmodels/chat_viewmodel.dart';
-import '../viewmodels/profile_viewmodel.dart';
 import '../widgets/bouncy_button.dart';
 import '../widgets/pulse_loader.dart';
 import '../widgets/chat/chat_bubble.dart';
 import '../widgets/chat/chat_input_bar.dart';
-import '../utils/game_page_route.dart';
 import 'settings_view.dart';
 
 /// Main Chat Screen (View layer)
@@ -24,20 +22,8 @@ class _ChatViewState extends State<ChatView> {
   @override
   void initState() {
     super.initState();
-    // Schedule after the first frame so context.read is safe to call.
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      debugPrint('[View] initState → ProfileViewModel.initialize() 호출');
-      // 1. Sign in and initialise profiles (auto-creates default if needed).
       final chatVm = context.read<ChatViewModel>();
-      final profileVm = context.read<ProfileViewModel>();
-
-      // Sign in first to get the userId.
-      final userId = await chatVm.signInAndGetUserId();
-
-      // Initialise profiles under that userId.
-      await profileVm.initialize(userId);
-
-      // Then initialise the chat session under the now-active profile.
       debugPrint('[View] initState → ChatViewModel.initialize() 호출');
       await chatVm.initialize();
     });

@@ -5,13 +5,10 @@ import '../../models/chat_message.dart';
 import '../../models/chat_session.dart';
 import 'base_chat_repository.dart';
 
-// TODO: 세이프티 설정 (폭력성 등)
-
-/// Concrete [BaseChatRepository] that communicates directly with
-/// Firebase Anonymous Auth and Cloud Firestore.
+/// Concrete [BaseChatRepository] that communicates directly with Cloud Firestore.
 ///
 /// Firestore data structure:
-///   users/{userId}/profiles/{profileId}/chats/{chatId}
+///   users/{userId}/chats/{chatId}
 ///     ├── title:        String
 ///     ├── updatedAt:    Timestamp
 ///     ├── messageCount: int
@@ -30,27 +27,19 @@ class FirestoreChatRepository implements BaseChatRepository {
   // Helpers
   // ---------------------------------------------------------------------------
 
-  CollectionReference<Map<String, dynamic>> _chatsRef(
-    String userId,
-    String profileId,
-  ) => _firestore
-      .collection('users')
-      .doc(userId)
-      .collection('profiles')
-      .doc(profileId)
-      .collection('chats');
+  CollectionReference<Map<String, dynamic>> _chatsRef(String userId) =>
+      _firestore.collection('users').doc(userId).collection('chats');
 
   // ---------------------------------------------------------------------------
   // BaseChatRepository implementation
   // ---------------------------------------------------------------------------
 
   @override
-  Future<String> createChat(String userId, String profileId) async {
+  Future<String> createChat(String userId) async {
     try {
-      final chatRef = _chatsRef(userId, profileId).doc();
+      final chatRef = _chatsRef(userId).doc();
 
       await chatRef.set({
-        // TODO: Replace fixed title with auto-generated title in a future phase.
         'title': '새 대화',
         'updatedAt': FieldValue.serverTimestamp(),
         'messageCount': 0,
@@ -64,13 +53,9 @@ class FirestoreChatRepository implements BaseChatRepository {
   }
 
   @override
-  Future<List<ChatMessage>> loadMessages(
-    String userId,
-    String profileId,
-    String chatId,
-  ) async {
+  Future<List<ChatMessage>> loadMessages(String userId, String chatId) async {
     try {
-      final snapshot = await _chatsRef(userId, profileId)
+      final snapshot = await _chatsRef(userId)
           .doc(chatId)
           .collection('messages')
           .orderBy('createdAt', descending: false)
@@ -88,20 +73,17 @@ class FirestoreChatRepository implements BaseChatRepository {
   @override
   Future<void> saveMessage(
     String userId,
-    String profileId,
     String chatId,
     ChatMessage message,
   ) async {
     try {
-      final messagesRef = _chatsRef(
-        userId,
-        profileId,
-      ).doc(chatId).collection('messages');
+      final messagesRef =
+          _chatsRef(userId).doc(chatId).collection('messages');
 
       await messagesRef.doc(message.id).set(message.toFirestore());
 
       // Keep the parent chat's updatedAt in sync.
-      await _chatsRef(userId, profileId).doc(chatId).update({
+      await _chatsRef(userId).doc(chatId).update({
         'updatedAt': FieldValue.serverTimestamp(),
         'messageCount': FieldValue.increment(1),
       });
@@ -110,16 +92,14 @@ class FirestoreChatRepository implements BaseChatRepository {
       );
     } catch (e, st) {
       debugPrint('[FirestoreChatRepository] saveMessage error: $e\n$st');
-      // Intentionally swallowed — caller uses unawaited fire-and-forget.
     }
   }
 
   @override
-  Future<List<ChatSession>> listChats(String userId, String profileId) async {
+  Future<List<ChatSession>> listChats(String userId) async {
     try {
       final snapshot = await _chatsRef(
         userId,
-        profileId,
       ).orderBy('updatedAt', descending: true).get();
       return snapshot.docs.map((doc) {
         final data = doc.data();
@@ -140,30 +120,18 @@ class FirestoreChatRepository implements BaseChatRepository {
   }
 
   @override
-  Future<void> deleteChat(
-    String userId,
-    String profileId,
-    String chatId,
-  ) async {
+  Future<void> deleteChat(String userId, String chatId) async {
     debugPrint(
-      '[Firestore] deleteChat() 호출됨 '
-      '(userId: $userId, profileId: $profileId, chatId: $chatId)',
+      '[Firestore] deleteChat() 호출됨 (userId: $userId, chatId: $chatId)',
     );
     try {
-      final chatRef = _chatsRef(userId, profileId).doc(chatId);
-      // Firestore does not automatically delete subcollections when a document
-      // is deleted, so we must delete all messages first.
+      final chatRef = _chatsRef(userId).doc(chatId);
       final messagesSnapshot = await chatRef.collection('messages').get();
-      debugPrint(
-        '[Firestore] deleteChat() → messages 서브컬렉션 '
-        '${messagesSnapshot.docs.length}개 삭제 중',
-      );
       final batch = _firestore.batch();
       for (final doc in messagesSnapshot.docs) {
         batch.delete(doc.reference);
       }
       await batch.commit();
-      debugPrint('[Firestore] deleteChat() → messages 서브컬렉션 삭제 완료');
 
       await chatRef.delete();
       debugPrint('[Firestore] deleteChat() 완료 → chatId: $chatId 삭제됨');
@@ -175,15 +143,11 @@ class FirestoreChatRepository implements BaseChatRepository {
   @override
   Future<void> updateChatTitle(
     String userId,
-    String profileId,
     String chatId,
     String newTitle,
   ) async {
     try {
-      await _chatsRef(
-        userId,
-        profileId,
-      ).doc(chatId).update({'title': newTitle});
+      await _chatsRef(userId).doc(chatId).update({'title': newTitle});
       debugPrint(
         '[Firestore] updateChatTitle() 완료 → chatId: $chatId, title: $newTitle',
       );
