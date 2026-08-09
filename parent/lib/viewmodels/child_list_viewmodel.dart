@@ -20,6 +20,8 @@ class ChildListViewModel extends ChangeNotifier {
   List<ChildInfo> _children = [];
   bool _isLoading = true;
   StreamSubscription<QuerySnapshot>? _subscription;
+  final Map<String, StreamSubscription<DocumentSnapshot>> _childUserSubscriptions = {};
+  final Map<String, ChildInfo> _childInfoMap = {};
 
   List<ChildInfo> get children => List.unmodifiable(_children);
   bool get isLoading => _isLoading;
@@ -39,40 +41,54 @@ class ChildListViewModel extends ChangeNotifier {
           .where('status', isEqualTo: 'active')
           .snapshots()
           .listen(
-        (snapshot) async {
-          final List<ChildInfo> loadedChildren = [];
+        (snapshot) {
+          final activeFamilyIds = <String>{};
 
           for (final doc in snapshot.docs) {
+            final familyId = doc.id;
+            activeFamilyIds.add(familyId);
             final data = doc.data();
             final childUid = data['childUid'] as String? ?? '';
 
-            String? nickname;
-            if (childUid.isNotEmpty) {
-              try {
-                final userDoc =
-                    await _firestore.collection('users').doc(childUid).get();
-                if (userDoc.exists && userDoc.data() != null) {
-                  final userData = userDoc.data()!;
-                  nickname = userData['name'] as String? ??
+            if (childUid.isNotEmpty && !_childUserSubscriptions.containsKey(familyId)) {
+              _childUserSubscriptions[familyId] = _firestore
+                  .collection('users')
+                  .doc(childUid)
+                  .snapshots()
+                  .listen(
+                (userDoc) {
+                  final userData = userDoc.data() ?? {};
+                  final name = userData['name'] as String? ??
                       userData['nickname'] as String?;
-                }
-              } catch (e) {
-                debugPrint('[ChildListViewModel] 자녀 닉네임 로드 실패: $e');
-              }
-            }
 
-            loadedChildren.add(
-              ChildInfo.fromFirestore(
-                familyId: doc.id,
-                familyData: data,
-                nickname: nickname,
-              ),
-            );
+                  _childInfoMap[familyId] = ChildInfo.fromFirestore(
+                    familyId: familyId,
+                    familyData: data,
+                    name: name,
+                  );
+                  _updateChildrenList();
+                },
+                onError: (e) {
+                  debugPrint('[ChildListViewModel] 자녀 유저 문서 수신 실패 ($childUid): $e');
+                },
+              );
+            }
           }
 
-          _children = loadedChildren;
-          _isLoading = false;
-          notifyListeners();
+          // Clean up subscriptions for removed families
+          final removedFamilyIds = _childUserSubscriptions.keys
+              .where((id) => !activeFamilyIds.contains(id))
+              .toList();
+
+          for (final familyId in removedFamilyIds) {
+            _childUserSubscriptions[familyId]?.cancel();
+            _childUserSubscriptions.remove(familyId);
+            _childInfoMap.remove(familyId);
+          }
+
+          if (snapshot.docs.isEmpty) {
+            _updateChildrenList();
+          }
         },
         onError: (error) {
           debugPrint('[ChildListViewModel] families 쿼리 에러: $error');
@@ -87,9 +103,20 @@ class ChildListViewModel extends ChangeNotifier {
     }
   }
 
+  void _updateChildrenList() {
+    _children = _childInfoMap.values.toList()
+      ..sort((a, b) => b.pairedAt.compareTo(a.pairedAt));
+    _isLoading = false;
+    notifyListeners();
+  }
+
   @override
   void dispose() {
     _subscription?.cancel();
+    for (final sub in _childUserSubscriptions.values) {
+      sub.cancel();
+    }
+    _childUserSubscriptions.clear();
     super.dispose();
   }
 }

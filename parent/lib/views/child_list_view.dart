@@ -94,7 +94,7 @@ class _ChildListContentState extends State<_ChildListContent> {
                                   MaterialPageRoute(
                                     builder: (_) => HomeView(
                                       childUid: child.childUid,
-                                      childName: child.nickname,
+                                      childName: child.name,
                                     ),
                                   ),
                                 );
@@ -249,7 +249,7 @@ class _ChildCardTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    childInfo.nickname,
+                    childInfo.name,
                     style: AppTypography.headlineMedium.copyWith(fontSize: 22),
                   ),
                   const SizedBox(height: 2),
