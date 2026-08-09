@@ -17,6 +17,9 @@ import '../widgets/task_add_edit_sheet.dart';
 import 'chat_view.dart';
 import 'settings_view.dart';
 
+// TODO: 과제 -> 채팅으로 들어갔을 때 프롬프트에 과제 내용이 반영되도록 하기
+// TODO: 부모 앱에서 일단 연동화면 들어가면 못 나가는 버그? 고치기
+
 /// Main Home view for the child app based on task checklist & learning assistance.
 class HomeView extends StatelessWidget {
   const HomeView({super.key});
@@ -231,7 +234,7 @@ class _TaskControlBar extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Padding(
-          padding: const EdgeInsets.only(left: 5),
+          padding: const EdgeInsets.only(left: 6),
           child: Text(
             '과제 목록',
             style: AppTypography.headlineMedium.copyWith(fontSize: 22),
