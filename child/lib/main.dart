@@ -4,10 +4,11 @@ import 'package:shared/shared.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'theme/app_theme.dart';
 import 'viewmodels/chat_viewmodel.dart';
-import 'viewmodels/profile_viewmodel.dart';
 import 'viewmodels/settings_viewmodel.dart';
+import 'viewmodels/user_viewmodel.dart';
 import 'views/chat_view.dart';
 import 'views/child_pairing_view.dart';
+import 'views/nickname_setup_view.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
@@ -15,14 +16,10 @@ import 'firebase_options.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'services/chat/base_chat_repository.dart';
 import 'services/chat/firestore_chat_repository.dart';
-import 'services/profile/base_profile_repository.dart';
-import 'services/profile/firestore_profile_repository.dart';
+import 'services/user/user_repository.dart';
 import 'services/llm/gemini_provider.dart';
 import 'services/llm/provider_manager.dart';
 
-// ---------------------------------------------------------------------------
-// SharedPreferences key for pairing completion flag
-// ---------------------------------------------------------------------------
 const _kPairingComplete = 'pairing_complete';
 
 late final String _modelName;
@@ -62,7 +59,6 @@ void main() async {
   _titleModelName = remoteConfig.getString('title_model_name');
   _titleSystemPrompt = remoteConfig.getString('title_system_prompt');
 
-  // system_prompt must never be empty — the AI cannot operate safely without it.
   if (_systemPrompt.isEmpty) {
     throw Exception(
       '[Config Error] system_prompt is empty. '
@@ -81,21 +77,15 @@ void main() async {
     _titleSystemPrompt = remoteConfig.getString("title_system_prompt");
   });
 
-  // ---------------------------------------------------------------------------
-  // Auth — shared BaseAuthProvider (FirebaseAuthProvider)
-  // ---------------------------------------------------------------------------
+  // Auth
   final BaseAuthProvider authProvider = FirebaseAuthProvider();
   final String userId = await authProvider.signInAnonymously();
 
-  // ---------------------------------------------------------------------------
   // Check pairing status
-  // ---------------------------------------------------------------------------
   final prefs = await SharedPreferences.getInstance();
   final isPaired = prefs.getBool(_kPairingComplete) ?? false;
 
-  // ---------------------------------------------------------------------------
-  // LLM and repositories
-  // ---------------------------------------------------------------------------
+  // Repositories & Managers
   final providerManager = ProviderManager(
     provider: GeminiProvider(
       modelName: _modelName,
@@ -107,18 +97,11 @@ void main() async {
     ),
   );
 
-  // BaseChatRepository typed — swap to a different backend by changing this
-  // single line without touching ViewModel or View code.
   final BaseChatRepository chatRepository = FirestoreChatRepository();
+  final userRepository = UserRepository();
 
-  // BaseProfileRepository typed — same swap-friendly pattern.
-  final BaseProfileRepository profileRepository = FirestoreProfileRepository();
+  final userViewModel = UserViewModel(repository: userRepository);
 
-  // ProfileViewModel is created first so it can be passed into ChatViewModel.
-  final profileViewModel = ProfileViewModel(repository: profileRepository);
-
-  // SettingsViewModel is initialised before runApp so that persisted settings
-  // (font, text size, TTS voice) are ready before the first frame is drawn.
   final settingsViewModel = SettingsViewModel();
   await settingsViewModel.init();
 
@@ -126,7 +109,7 @@ void main() async {
     MultiProvider(
       providers: [
         Provider<BaseAuthProvider>.value(value: authProvider),
-        ChangeNotifierProvider<ProfileViewModel>.value(value: profileViewModel),
+        ChangeNotifierProvider<UserViewModel>.value(value: userViewModel),
         ChangeNotifierProvider<SettingsViewModel>.value(
           value: settingsViewModel,
         ),
@@ -134,7 +117,7 @@ void main() async {
           create: (_) => ChatViewModel(
             providerManager: providerManager,
             repository: chatRepository,
-            profileViewModel: profileViewModel,
+            userViewModel: userViewModel,
             authProvider: authProvider,
           ),
         ),
@@ -171,8 +154,6 @@ class CapstoneAiApp extends StatelessWidget {
         fontFamily: settings.fontFamily,
         isBold: settings.isBold,
       ),
-      // Override textScaler for all descendants so the font-size slider
-      // affects every text widget in the app without individual wiring.
       builder: (context, child) {
         final scale = settings.textSize / SettingsViewModel.defaultTextSize;
         return MediaQuery(
@@ -189,7 +170,7 @@ class CapstoneAiApp extends StatelessWidget {
   }
 }
 
-/// Wraps [ChildPairingView] and pushes [ChatView] once pairing succeeds.
+/// Gate handling ChildPairingView -> NicknameSetupView -> ChatView flow.
 class _PairingGate extends StatefulWidget {
   final String userId;
   final SharedPreferences prefs;
@@ -209,7 +190,15 @@ class _PairingGateState extends State<_PairingGate> {
         await widget.prefs.setBool(_kPairingComplete, true);
         if (!mounted) return;
         navigator.pushReplacement(
-          MaterialPageRoute(builder: (_) => const ChatView()),
+          MaterialPageRoute(
+            builder: (_) => NicknameSetupView(
+              onCompleted: () {
+                navigator.pushReplacement(
+                  MaterialPageRoute(builder: (_) => const ChatView()),
+                );
+              },
+            ),
+          ),
         );
       },
     );

@@ -1,57 +1,31 @@
 import '../../models/chat_message.dart';
 import '../../models/chat_session.dart';
 
-// TODO: local storage 추가
-
-/// Abstract interface for all chat data-access implementations.
+/// Abstract interface for chat data-access implementations.
 ///
-/// All methods require both [userId] (device UID) and [profileId] so that
-/// chat data is stored under the active user profile:
-///   users/{userId}/profiles/{profileId}/chats/{chatId}
-///
-/// The ViewModel depends only on this interface, so the underlying storage
-/// backend (Firestore, Supabase, SQLite…) can be swapped without touching
-/// any ViewModel code.
-///
-/// NOTE: Anonymous sign-in is no longer part of this interface.
-/// Authentication is handled separately by [BaseAuthProvider] (shared package).
+/// Firestore data path: `users/{userId}/chats/{chatId}`
 abstract class BaseChatRepository {
+  /// Creates a new chat room document under `users/{userId}/chats`.
+  /// Returns the generated chatId, or an empty string on error.
+  Future<String> createChat(String userId);
 
-  /// Creates a new chat room for the given [userId] / [profileId] pair
-  /// and returns its generated [chatId].
-  Future<String> createChat(String userId, String profileId);
+  /// Loads all messages for [chatId] under `users/{userId}/chats/{chatId}/messages`.
+  /// Ordered by createdAt ascending. Returns an empty list on error.
+  Future<List<ChatMessage>> loadMessages(String userId, String chatId);
 
-  /// Returns all messages in [chatId] ordered by creation time (ascending).
-  Future<List<ChatMessage>> loadMessages(
-    String userId,
-    String profileId,
-    String chatId,
-  );
+  /// Saves [message] to `users/{userId}/chats/{chatId}/messages/{message.id}`.
+  /// Also updates the parent chat document's `updatedAt` timestamp and increments `messageCount`.
+  /// Swallows errors so execution can proceed without blocking the UI.
+  Future<void> saveMessage(String userId, String chatId, ChatMessage message);
 
-  /// Persists a single [message] to storage.
-  /// Implementations should fail silently on error — this is intended to be
-  /// called fire-and-forget via [unawaited].
-  Future<void> saveMessage(
-    String userId,
-    String profileId,
-    String chatId,
-    ChatMessage message,
-  );
+  /// Lists all chat sessions for [userId], ordered by `updatedAt` descending.
+  /// Returns an empty list on error.
+  Future<List<ChatSession>> listChats(String userId);
 
-  /// Returns all chat sessions for the given [userId] / [profileId] pair,
-  /// ordered by most recently updated (descending). Returns an empty list on error.
-  Future<List<ChatSession>> listChats(String userId, String profileId);
-
-  /// Permanently deletes the chat document and all its messages subcollection
-  /// for the given [userId] / [profileId] / [chatId] triple.
+  /// Deletes the chat room document and all nested messages for [chatId].
   /// Fails silently on error.
-  Future<void> deleteChat(String userId, String profileId, String chatId);
+  Future<void> deleteChat(String userId, String chatId);
 
-  /// Updates the title of the chat document.
-  Future<void> updateChatTitle(
-    String userId,
-    String profileId,
-    String chatId,
-    String newTitle,
-  );
+  /// Updates the `title` field of the chat room document.
+  Future<void> updateChatTitle(String userId, String chatId, String newTitle);
 }

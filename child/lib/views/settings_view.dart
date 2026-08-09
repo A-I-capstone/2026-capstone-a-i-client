@@ -1,11 +1,10 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
-import '../viewmodels/profile_viewmodel.dart';
 import '../viewmodels/settings_viewmodel.dart';
-import 'profile_select_view.dart';
-
+import '../viewmodels/user_viewmodel.dart';
+import 'nickname_setup_view.dart';
 
 class SettingsView extends StatelessWidget {
   const SettingsView({super.key});
@@ -87,15 +86,21 @@ class _AccountSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final activeProfile = context.watch<ProfileViewModel>().activeProfile;
-    final profileName = activeProfile?.name ?? '내 친구';
+    final name = context.watch<UserViewModel>().name;
 
     return GestureDetector(
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const ProfileSelectView()),
-      ),
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => NicknameSetupView(
+              isEditing: true,
+              onCompleted: () => Navigator.of(context).pop(),
+            ),
+          ),
+        );
+      },
       child: _SettingsCard(
-        title: '계정 관리',
+        title: '계정 및 닉네임',
         child: Row(
           children: [
             const CircleAvatar(
@@ -108,9 +113,9 @@ class _AccountSection extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(profileName, style: AppTypography.headlineMedium),
+                  Text(name, style: AppTypography.headlineMedium),
                   Text(
-                    '프로필 변경하기',
+                    '닉네임 변경하기',
                     style: AppTypography.bodyMedium.copyWith(
                       color: AppColors.slate,
                     ),
@@ -258,8 +263,7 @@ class _TextSettingsSection extends StatelessWidget {
                 value: viewModel.isBold,
                 activeColor: AppColors.surface,
                 activeTrackColor: AppColors.ocean,
-                inactiveThumbColor: AppColors.surface,
-                inactiveTrackColor: AppColors.border,
+                inactiveThumbColor: AppColors.border,
                 onChanged: (_) =>
                     context.read<SettingsViewModel>().toggleBold(),
               ),
@@ -337,8 +341,6 @@ class _FontPreview extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          // The preview bypasses the app-wide textScaler so the slider value
-          // is shown at its literal pt size (easier to judge relative change).
           MediaQuery(
             data: MediaQuery.of(context).copyWith(
               textScaler: TextScaler.noScaling,
