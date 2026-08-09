@@ -5,33 +5,40 @@ import '../models/task.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 import '../viewmodels/home_viewmodel.dart';
-import '../viewmodels/onboarding_viewmodel.dart';
 import '../widgets/bouncy_button.dart';
+
+import 'parent_settings_view.dart';
+
 
 /// Parent App Main Home View.
 ///
 /// Layout (mirrors mockup):
-///   1. Header row  — back icon (right)
+///   1. Header row  — settings icon (left), child name (center), back icon (right)
 ///   2. 부모 리포트 — prominent CTA button (placeholder)
 ///   3. Task list   — same design language as child app, read-only
 class HomeView extends StatelessWidget {
-  const HomeView({super.key});
+  final String childUid;
+  final String? childName;
+
+  const HomeView({
+    super.key,
+    required this.childUid,
+    this.childName,
+  });
 
   @override
   Widget build(BuildContext context) {
-    // Retrieve the paired child UID from onboarding state (persisted in SharedPreferences).
-    final onboarding = context.read<ParentOnboardingViewModel>();
-    final childUid = onboarding.childUid ?? '';
-
     return ChangeNotifierProvider(
       create: (_) => HomeViewModel(childUid: childUid),
-      child: const _HomeContent(),
+      child: _HomeContent(childName: childName),
     );
   }
 }
 
 class _HomeContent extends StatelessWidget {
-  const _HomeContent();
+  final String? childName;
+
+  const _HomeContent({this.childName});
 
   @override
   Widget build(BuildContext context) {
@@ -43,13 +50,13 @@ class _HomeContent extends StatelessWidget {
             SliverPadding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               sliver: SliverList(
-                delegate: SliverChildListDelegate.fixed(const [
-                  _HomeHeader(),
-                  SizedBox(height: 20),
-                  _ReportButton(),
-                  SizedBox(height: 24),
-                  _TaskControlBar(),
-                  SizedBox(height: 12),
+                delegate: SliverChildListDelegate.fixed([
+                  _HomeHeader(childName: childName),
+                  const SizedBox(height: 20),
+                  const _ReportButton(),
+                  const SizedBox(height: 24),
+                  const _TaskControlBar(),
+                  const SizedBox(height: 12),
                 ]),
               ),
             ),
@@ -67,15 +74,46 @@ class _HomeContent extends StatelessWidget {
 // Header
 // ─────────────────────────────────────────────
 
-/// Top bar: just a back icon on the right — no settings for parent home.
+/// Top bar: settings icon on the left, child name in center, back icon on the right.
 class _HomeHeader extends StatelessWidget {
-  const _HomeHeader();
+  final String? childName;
+
+  const _HomeHeader({this.childName});
 
   @override
   Widget build(BuildContext context) {
+    final parentUid = context.watch<HomeViewModel>().childUid; // fallback or pass parentUid
+
     return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
+        BouncyButton(
+          isCircle: true,
+          backgroundColor: AppColors.surface,
+          padding: const EdgeInsets.all(10),
+          icon: const Icon(
+            Icons.settings_rounded,
+            color: AppColors.ink,
+            size: 26,
+          ),
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => ParentSettingsView(parentUid: parentUid),
+              ),
+            );
+          },
+        ),
+        if (childName != null && childName!.isNotEmpty)
+          Expanded(
+            child: Text(
+              '$childName의 과제',
+              textAlign: TextAlign.center,
+              style: AppTypography.headlineMedium.copyWith(fontSize: 20),
+            ),
+          )
+        else
+          const SizedBox.shrink(),
         BouncyButton(
           isCircle: true,
           backgroundColor: AppColors.sunriseYellow,
@@ -83,7 +121,7 @@ class _HomeHeader extends StatelessWidget {
           icon: const Icon(
             Icons.arrow_back_rounded,
             color: AppColors.ink,
-            size: 28,
+            size: 26,
           ),
           onTap: () {
             if (Navigator.of(context).canPop()) {

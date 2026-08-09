@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared/shared.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 import '../viewmodels/settings_viewmodel.dart';
 import '../viewmodels/user_viewmodel.dart';
+import 'child_pairing_view.dart';
 import 'nickname_setup_view.dart';
 
 class SettingsView extends StatelessWidget {
@@ -36,6 +38,8 @@ class SettingsView extends StatelessWidget {
           children: const [
             _AccountSection(),
             SizedBox(height: 32),
+            _PairingSection(),
+            SizedBox(height: 32),
             _TextSettingsSection(),
             SizedBox(height: 32),
             _HelpSection(),
@@ -48,6 +52,7 @@ class SettingsView extends StatelessWidget {
 }
 
 // ── Shared card shell ──────────────────────────────────────────────────────
+
 
 class _SettingsCard extends StatelessWidget {
   final String title;
@@ -132,6 +137,73 @@ class _AccountSection extends StatelessWidget {
     );
   }
 }
+
+// ── Pairing section ────────────────────────────────────────────────────────
+
+class _PairingSection extends StatelessWidget {
+  const _PairingSection();
+
+  @override
+  Widget build(BuildContext context) {
+    final authProvider = context.read<BaseAuthProvider>();
+    final childUid = authProvider.currentUid ?? '';
+
+    return _SettingsCard(
+      title: '부모님 앱 연동',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => ChildPairingView(
+                childUid: childUid,
+                onPaired: (familyId) {
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('부모님 앱과 성공적으로 연동되었어요!'),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                },
+              ),
+            ),
+          );
+        },
+        child: Row(
+          children: [
+            const CircleAvatar(
+              radius: 24,
+              backgroundColor: AppColors.peach,
+              child: Icon(Icons.link_rounded, size: 28, color: AppColors.ink),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('부모님 앱 연동하기', style: AppTypography.headlineMedium),
+                  Text(
+                    '수동으로 연동을 진행해요',
+                    style: AppTypography.bodyMedium.copyWith(
+                      color: AppColors.slate,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: AppColors.ink,
+              size: 32,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 
 // ── Text / font section ────────────────────────────────────────────────────
 
