@@ -540,8 +540,8 @@ class _HomeBottomBar extends StatelessWidget {
               isSelected: true,
             ),
             _BottomNavItem(
-              icon: Icons.person_outline_rounded,
-              label: '프로필',
+              icon: Icons.calendar_month_rounded,
+              label: '캘린더',
               isSelected: false,
             ),
           ],

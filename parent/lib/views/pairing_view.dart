@@ -10,26 +10,35 @@ import '../viewmodels/pairing_viewmodel.dart';
 class ParentPairingView extends StatelessWidget {
   final String parentUid;
   final VoidCallback onPairingComplete;
+  final bool isFirstSetup;
 
   const ParentPairingView({
     super.key,
     required this.parentUid,
     required this.onPairingComplete,
+    this.isFirstSetup = true,
   });
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) => ParentPairingViewModel()..initialize(parentUid),
-      child: _ParentPairingContent(onPairingComplete: onPairingComplete),
+      child: _ParentPairingContent(
+        onPairingComplete: onPairingComplete,
+        isFirstSetup: isFirstSetup,
+      ),
     );
   }
 }
 
 class _ParentPairingContent extends StatefulWidget {
   final VoidCallback onPairingComplete;
+  final bool isFirstSetup;
 
-  const _ParentPairingContent({required this.onPairingComplete});
+  const _ParentPairingContent({
+    required this.onPairingComplete,
+    required this.isFirstSetup,
+  });
 
   @override
   State<_ParentPairingContent> createState() => _ParentPairingContentState();
@@ -47,13 +56,22 @@ class _ParentPairingContentState extends State<_ParentPairingContent> {
     }
 
     return PopScope(
-      canPop: false, // Cannot go back without pairing
+      canPop: !widget.isFirstSetup, // Allow go back if not first setup
       child: Scaffold(
         backgroundColor: const Color(0xFFF8F4F2),
         appBar: AppBar(
           title: const Text('자녀 앱 연동'),
           centerTitle: true,
-          automaticallyImplyLeading: false,
+          automaticallyImplyLeading: !widget.isFirstSetup,
+          leading: widget.isFirstSetup
+              ? null
+              : IconButton(
+                  icon: const Icon(
+                    Icons.arrow_back_rounded,
+                    color: Color(0xFF3A3936),
+                  ),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
         ),
         body: SafeArea(
           child: SingleChildScrollView(
@@ -159,15 +177,41 @@ class _ParentPairingContentState extends State<_ParentPairingContent> {
                   ],
                 ),
                 const SizedBox(height: 24),
-                const Text(
-                  '* 5분이 지나면 PIN 번호가 자동으로 갱신됩니다.\n* 연동을 완료하기 전까지 앱을 이탈할 수 없습니다.',
+                Text(
+                  widget.isFirstSetup
+                      ? '* 5분이 지나면 PIN 번호가 자동으로 갱신됩니다.\n* 연동을 완료하기 전까지 앱을 이탈할 수 없습니다.'
+                      : '* 5분이 지나면 PIN 번호가 자동으로 갱신됩니다.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 13,
                     color: Color(0xFFADAAA4),
                     height: 1.4,
                   ),
                 ),
+                if (!widget.isFirstSetup) ...[
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Color(0xFF3A3936), width: 1.5),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        foregroundColor: const Color(0xFF3A3936),
+                      ),
+                      child: const Text(
+                        '연동 취소',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
