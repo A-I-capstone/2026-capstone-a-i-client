@@ -102,13 +102,14 @@ class HomeViewModel extends ChangeNotifier {
     String title,
     DateTime? dueDate,
     List<String> subtaskTitles,
+    String subject,
   ) async {
     try {
       final subtasks = subtaskTitles
           .where((t) => t.trim().isNotEmpty)
           .map(
             (t) => SubTask(
-              id: 'st_${DateTime.now().microsecondsSinceEpoch}',
+              id: 'st_${DateTime.now().microsecondsSinceEpoch}_${t.hashCode}',
               title: t.trim(),
             ),
           )
@@ -119,11 +120,48 @@ class HomeViewModel extends ChangeNotifier {
         title: title,
         dueDate: dueDate,
         subtasks: subtasks,
+        subject: subject,
       );
 
       await _taskRepository.createTask(_userId, newTask);
     } catch (e) {
       debugPrint('[HomeViewModel] addTask error: $e');
+    }
+  }
+
+  Future<void> editTask(
+    Task originalTask,
+    String title,
+    DateTime? dueDate,
+    List<String> subtaskTitles,
+    String subject,
+  ) async {
+    try {
+      final subtasks = subtaskTitles
+          .where((t) => t.trim().isNotEmpty)
+          .map((t) {
+            final existingIndex =
+                originalTask.subtasks.indexWhere((st) => st.title == t.trim());
+            if (existingIndex != -1) {
+              return originalTask.subtasks[existingIndex];
+            }
+            return SubTask(
+              id: 'st_${DateTime.now().microsecondsSinceEpoch}_${t.hashCode}',
+              title: t.trim(),
+            );
+          })
+          .toList();
+
+      final updated = originalTask.copyWith(
+        title: title,
+        dueDate: dueDate,
+        subtasks: subtasks,
+        subject: subject,
+      );
+
+      await _taskRepository.updateTask(_userId, updated);
+    } catch (e) {
+      debugPrint('[HomeViewModel] editTask error: $e');
     }
   }
 
@@ -140,7 +178,11 @@ class HomeViewModel extends ChangeNotifier {
       final index = _tasks.indexWhere((t) => t.id == taskId);
       if (index != -1) {
         final task = _tasks[index];
-        final updated = task.copyWith(isCompleted: !task.isCompleted);
+        final nowCompleted = !task.isCompleted;
+        final updated = task.copyWith(
+          isCompleted: nowCompleted,
+          completedAt: nowCompleted ? DateTime.now() : null,
+        );
         await _taskRepository.updateTask(_userId, updated);
       }
     } catch (e) {
