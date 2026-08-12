@@ -110,8 +110,10 @@ class _HomeHeader extends StatelessWidget {
           onTap: () {
             TaskAddEditSheet.show(
               context,
-              onSave: (title, dueDate, subtasks) {
-                context.read<HomeViewModel>().addTask(title, dueDate, subtasks);
+              onSave: (title, dueDate, subtasks, subject) {
+                context
+                    .read<HomeViewModel>()
+                    .addTask(title, dueDate, subtasks, subject);
               },
             );
           },
@@ -323,77 +325,112 @@ class _TaskRowTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final viewModel = context.read<HomeViewModel>();
 
-    return Container(
-      decoration: BoxDecoration(
-        color: task.isDueToday ? const Color(0xFFFFF3CD) : AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.ink, width: 2),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Main task row
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-            child: Row(
-              children: [
-                GestureDetector(
-                  onTap: () => viewModel.toggleTask(task.id),
-                  child: Icon(
-                    task.isCompleted
-                        ? Icons.check_box_rounded
-                        : Icons.check_box_outline_blank_rounded,
-                    color: AppColors.ink,
-                    size: 28,
+    return GestureDetector(
+      onLongPress: () {
+        TaskAddEditSheet.show(
+          context,
+          task: task,
+          onSave: (title, dueDate, subtasks, subject) {
+            viewModel.editTask(task, title, dueDate, subtasks, subject);
+          },
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: task.isDueToday ? const Color(0xFFFFF3CD) : AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.ink, width: 2),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Main task row
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () => viewModel.toggleTask(task.id),
+                    child: Icon(
+                      task.isCompleted
+                          ? Icons.check_box_rounded
+                          : Icons.check_box_outline_blank_rounded,
+                      color: AppColors.ink,
+                      size: 28,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        task.title,
-                        style: AppTypography.bodyLarge.copyWith(
-                          fontSize: 19,
-                          fontWeight: FontWeight.w700,
-                          decoration: task.isCompleted
-                              ? TextDecoration.lineThrough
-                              : null,
-                          color: task.isCompleted
-                              ? AppColors.slate
-                              : AppColors.ink,
-                        ),
-                      ),
-                      if (task.dueDate != null) ...[
-                        const SizedBox(height: 2),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (task.subject.isNotEmpty) ...[
+                          Container(
+                            margin: const EdgeInsets.only(bottom: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.peach,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: AppColors.ink,
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Text(
+                              task.subject,
+                              style: AppTypography.bodyMedium.copyWith(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.ink,
+                              ),
+                            ),
+                          ),
+                        ],
                         Text(
-                          task.isDueToday
-                              ? '(마감기한: 오늘)'
-                              : '(마감기한: ${task.dueDate!.month}월 ${task.dueDate!.day}일)',
-                          style: AppTypography.bodyMedium.copyWith(
-                            fontSize: 13,
+                          task.title,
+                          style: AppTypography.bodyLarge.copyWith(
+                            fontSize: 19,
                             fontWeight: FontWeight.w700,
-                            color: task.isDueToday
-                                ? AppColors.tangerine
-                                : AppColors.slate,
+                            decoration: task.isCompleted
+                                ? TextDecoration.lineThrough
+                                : null,
+                            color: task.isCompleted
+                                ? AppColors.slate
+                                : AppColors.ink,
                           ),
                         ),
+                        if (task.dueDate != null) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            task.isDueToday
+                                ? '(마감기한: 오늘)'
+                                : '(마감기한: ${task.dueDate!.month}월 ${task.dueDate!.day}일)',
+                            style: AppTypography.bodyMedium.copyWith(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: task.isDueToday
+                                  ? AppColors.tangerine
+                                  : AppColors.slate,
+                            ),
+                          ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
-                ),
-                IconButton(
-                  icon: const Icon(
-                    Icons.delete_outline_rounded,
-                    color: AppColors.clay,
-                    size: 22,
+                  IconButton(
+                    icon: const Icon(
+                      Icons.delete_outline_rounded,
+                      color: AppColors.clay,
+                      size: 22,
+                    ),
+                    onPressed: () => viewModel.deleteTask(task.id),
                   ),
-                  onPressed: () => viewModel.deleteTask(task.id),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
 
           // Subtasks list if any
           if (task.subtasks.isNotEmpty) ...[
@@ -482,6 +519,7 @@ class _TaskRowTile extends StatelessWidget {
           ),
         ],
       ),
+    ),
     );
   }
 
