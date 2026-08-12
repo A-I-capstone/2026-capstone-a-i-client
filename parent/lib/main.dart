@@ -78,6 +78,7 @@ class ParentApp extends StatelessWidget {
           if (!onboarding.pairingComplete) {
             return ParentPairingView(
               parentUid: parentUid,
+              isFirstSetup: true,
               onPairingComplete: () {
                 onboarding.completePairing();
               },

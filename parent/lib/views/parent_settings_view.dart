@@ -91,6 +91,7 @@ class _PairingSection extends StatelessWidget {
             MaterialPageRoute(
               builder: (_) => ParentPairingView(
                 parentUid: parentUid,
+                isFirstSetup: false,
                 onPairingComplete: () {
                   onboarding.completePairing();
                   Navigator.of(context).pop();
