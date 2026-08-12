@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../models/subject.dart';
 import '../models/task.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
+import '../viewmodels/subject_viewmodel.dart';
+import '../views/subject_management_view.dart';
 import 'bouncy_button.dart';
 
 /// Modal bottom sheet for adding or editing a Task.
@@ -11,12 +16,9 @@ class TaskAddEditSheet extends StatefulWidget {
     String title,
     DateTime? dueDate,
     List<String> subtasks,
-    String subject,
+    String subjectId,
   )
   onSave;
-
-  static const List<String> subjects = ['국어', '수학', '영어', '사회', '과학', '기타'];
-  // TODO: 과목 추가, 수정, 삭제 기능 추가
 
   const TaskAddEditSheet({super.key, this.task, required this.onSave});
 
@@ -27,7 +29,7 @@ class TaskAddEditSheet extends StatefulWidget {
       String title,
       DateTime? dueDate,
       List<String> subtasks,
-      String subject,
+      String subjectId,
     )
     onSave,
   }) {
@@ -47,15 +49,14 @@ class _TaskAddEditSheetState extends State<TaskAddEditSheet> {
   late final TextEditingController _titleController;
   late final List<TextEditingController> _subtaskControllers;
   DateTime? _selectedDueDate;
-  late String _selectedSubject;
+  String? _selectedSubjectId;
 
   @override
   void initState() {
     super.initState();
     _titleController = TextEditingController(text: widget.task?.title ?? '');
     _selectedDueDate = widget.task?.dueDate;
-    final initialSubject = widget.task?.subject ?? '';
-    _selectedSubject = initialSubject.isEmpty ? '기타' : initialSubject;
+    _selectedSubjectId = widget.task?.subjectId;
     _subtaskControllers = (widget.task?.subtasks ?? [])
         .map((st) => TextEditingController(text: st.title))
         .toList();
@@ -124,13 +125,26 @@ class _TaskAddEditSheetState extends State<TaskAddEditSheet> {
         .where((t) => t.isNotEmpty)
         .toList();
 
-    widget.onSave(title, _selectedDueDate, subtasks, _selectedSubject);
+    widget.onSave(title, _selectedDueDate, subtasks, _selectedSubjectId ?? '');
     Navigator.of(context).pop();
   }
 
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final subjectViewModel = context.watch<SubjectViewModel>();
+    final subjects = subjectViewModel.subjects;
+
+    // Ensure selectedSubjectId is valid among current subjects
+    if (_selectedSubjectId != null &&
+        _selectedSubjectId!.isNotEmpty &&
+        !subjects.any((s) => s.id == _selectedSubjectId)) {
+      _selectedSubjectId = null;
+    }
+
+    if (_selectedSubjectId == null && subjects.isNotEmpty) {
+      _selectedSubjectId = subjects.first.id;
+    }
 
     return Container(
       padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + bottomInset),
@@ -167,48 +181,92 @@ class _TaskAddEditSheetState extends State<TaskAddEditSheet> {
             ),
             const SizedBox(height: 16),
 
-            // Subject selection
+            // Subject selection Dropdown + Edit button
             const Text('과목', style: AppTypography.eyebrow),
             const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: TaskAddEditSheet.subjects.map((subject) {
-                final isSelected = _selectedSubject == subject;
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedSubject = subject;
-                    });
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 150),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 8,
-                    ),
+            Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
                     decoration: BoxDecoration(
-                      color: isSelected
-                          ? AppColors.sunriseYellow
-                          : AppColors.bg,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isSelected ? AppColors.ink : AppColors.border,
-                        width: isSelected ? 2 : 1.5,
-                      ),
+                      color: AppColors.bg,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.ink, width: 2),
                     ),
-                    child: Text(
-                      subject,
-                      style: AppTypography.bodyMedium.copyWith(
-                        fontWeight: isSelected
-                            ? FontWeight.w700
-                            : FontWeight.w500,
-                        color: isSelected ? AppColors.ink : AppColors.slate,
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: _selectedSubjectId,
+                        isExpanded: true,
+                        icon: const Icon(
+                          Icons.arrow_drop_down_rounded,
+                          color: AppColors.ink,
+                          size: 32,
+                        ),
+                        items: subjects.map((Subject subject) {
+                          return DropdownMenuItem<String>(
+                            value: subject.id,
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 18,
+                                  height: 18,
+                                  decoration: BoxDecoration(
+                                    color: Color(subject.colorValue),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: AppColors.ink,
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Text(
+                                  subject.name,
+                                  style: AppTypography.bodyMedium.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.ink,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (val) {
+                          if (val != null) {
+                            setState(() {
+                              _selectedSubjectId = val;
+                            });
+                          }
+                        },
                       ),
                     ),
                   ),
-                );
-              }).toList(),
+                ),
+                const SizedBox(width: 10),
+                BouncyButton(
+                  backgroundColor: AppColors.peach,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                  icon: const Icon(
+                    Icons.edit_rounded,
+                    color: AppColors.ink,
+                    size: 22,
+                  ),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => ChangeNotifierProvider.value(
+                          value: subjectViewModel,
+                          child: const SubjectManagementView(),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
             ),
             const SizedBox(height: 16),
 
@@ -316,7 +374,7 @@ class _TaskAddEditSheetState extends State<TaskAddEditSheet> {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: _subtaskControllers.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
+              separatorBuilder: (_, _) => const SizedBox(height: 8),
               itemBuilder: (context, index) {
                 return Row(
                   children: [

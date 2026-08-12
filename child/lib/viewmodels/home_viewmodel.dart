@@ -102,7 +102,7 @@ class HomeViewModel extends ChangeNotifier {
     String title,
     DateTime? dueDate,
     List<String> subtaskTitles,
-    String subject,
+    String subjectId,
   ) async {
     try {
       final subtasks = subtaskTitles
@@ -120,7 +120,7 @@ class HomeViewModel extends ChangeNotifier {
         title: title,
         dueDate: dueDate,
         subtasks: subtasks,
-        subject: subject,
+        subjectId: subjectId,
       );
 
       await _taskRepository.createTask(_userId, newTask);
@@ -134,7 +134,7 @@ class HomeViewModel extends ChangeNotifier {
     String title,
     DateTime? dueDate,
     List<String> subtaskTitles,
-    String subject,
+    String subjectId,
   ) async {
     try {
       final subtasks = subtaskTitles
@@ -156,7 +156,7 @@ class HomeViewModel extends ChangeNotifier {
         title: title,
         dueDate: dueDate,
         subtasks: subtasks,
-        subject: subject,
+        subjectId: subjectId,
       );
 
       await _taskRepository.updateTask(_userId, updated);

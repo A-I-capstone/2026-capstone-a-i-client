@@ -6,11 +6,13 @@ import '../models/task.dart';
 import '../services/chat/firestore_chat_repository.dart';
 import '../services/llm/gemini_provider.dart';
 import '../services/llm/provider_manager.dart';
+import '../services/subject/firestore_subject_repository.dart';
 import '../services/task/firestore_task_repository.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 import '../viewmodels/chat_viewmodel.dart';
 import '../viewmodels/home_viewmodel.dart';
+import '../viewmodels/subject_viewmodel.dart';
 import '../widgets/bouncy_button.dart';
 import '../widgets/pulse_loader.dart';
 import '../widgets/task_add_edit_sheet.dart';
@@ -29,11 +31,21 @@ class HomeView extends StatelessWidget {
     final authProvider = context.read<BaseAuthProvider>();
     final userId = authProvider.currentUid ?? '';
 
-    return ChangeNotifierProvider(
-      create: (_) => HomeViewModel(
-        taskRepository: FirestoreTaskRepository(),
-        userId: userId,
-      ),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (_) => HomeViewModel(
+            taskRepository: FirestoreTaskRepository(),
+            userId: userId,
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => SubjectViewModel(
+            repository: FirestoreSubjectRepository(),
+            userId: userId,
+          ),
+        ),
+      ],
       child: const _HomeViewContent(),
     );
   }
@@ -79,6 +91,9 @@ class _HomeHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final homeViewModel = context.read<HomeViewModel>();
+    final subjectViewModel = context.read<SubjectViewModel>();
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -108,13 +123,21 @@ class _HomeHeader extends StatelessWidget {
             size: 24,
           ),
           onTap: () {
-            TaskAddEditSheet.show(
-              context,
-              onSave: (title, dueDate, subtasks, subject) {
-                context
-                    .read<HomeViewModel>()
-                    .addTask(title, dueDate, subtasks, subject);
-              },
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (_) => MultiProvider(
+                providers: [
+                  ChangeNotifierProvider.value(value: homeViewModel),
+                  ChangeNotifierProvider.value(value: subjectViewModel),
+                ],
+                child: TaskAddEditSheet(
+                  onSave: (title, dueDate, subtasks, subjectId) {
+                    homeViewModel.addTask(title, dueDate, subtasks, subjectId);
+                  },
+                ),
+              ),
             );
           },
         ),
@@ -323,16 +346,28 @@ class _TaskRowTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final viewModel = context.read<HomeViewModel>();
+    final homeViewModel = context.read<HomeViewModel>();
+    final subjectViewModel = context.watch<SubjectViewModel>();
+    final subject = subjectViewModel.getSubjectById(task.subjectId);
 
     return GestureDetector(
       onLongPress: () {
-        TaskAddEditSheet.show(
-          context,
-          task: task,
-          onSave: (title, dueDate, subtasks, subject) {
-            viewModel.editTask(task, title, dueDate, subtasks, subject);
-          },
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (_) => MultiProvider(
+            providers: [
+              ChangeNotifierProvider.value(value: homeViewModel),
+              ChangeNotifierProvider.value(value: subjectViewModel),
+            ],
+            child: TaskAddEditSheet(
+              task: task,
+              onSave: (title, dueDate, subtasks, subjectId) {
+                homeViewModel.editTask(task, title, dueDate, subtasks, subjectId);
+              },
+            ),
+          ),
         );
       },
       child: Container(
@@ -350,7 +385,7 @@ class _TaskRowTile extends StatelessWidget {
               child: Row(
                 children: [
                   GestureDetector(
-                    onTap: () => viewModel.toggleTask(task.id),
+                    onTap: () => homeViewModel.toggleTask(task.id),
                     child: Icon(
                       task.isCompleted
                           ? Icons.check_box_rounded
@@ -364,7 +399,7 @@ class _TaskRowTile extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (task.subject.isNotEmpty) ...[
+                        if (subject != null) ...[
                           Container(
                             margin: const EdgeInsets.only(bottom: 4),
                             padding: const EdgeInsets.symmetric(
@@ -372,7 +407,7 @@ class _TaskRowTile extends StatelessWidget {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: AppColors.peach,
+                              color: Color(subject.colorValue),
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
                                 color: AppColors.ink,
@@ -380,7 +415,7 @@ class _TaskRowTile extends StatelessWidget {
                               ),
                             ),
                             child: Text(
-                              task.subject,
+                              subject.name,
                               style: AppTypography.bodyMedium.copyWith(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
@@ -426,7 +461,7 @@ class _TaskRowTile extends StatelessWidget {
                       color: AppColors.clay,
                       size: 22,
                     ),
-                    onPressed: () => viewModel.deleteTask(task.id),
+                    onPressed: () => homeViewModel.deleteTask(task.id),
                   ),
                 ],
               ),
@@ -441,7 +476,7 @@ class _TaskRowTile extends StatelessWidget {
                 children: [
                   for (final st in task.subtasks) ...[
                     GestureDetector(
-                      onTap: () => viewModel.toggleSubtask(task.id, st.id),
+                      onTap: () => homeViewModel.toggleSubtask(task.id, st.id),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 4),
                         child: Row(

@@ -55,9 +55,9 @@ class Task {
   final List<SubTask> subtasks;
   final String chatId;
 
-  /// Subject label for the task (e.g. '수학', '영어').
-  /// Empty string means no subject assigned — aggregated as '기타'.
-  final String subject;
+  /// Subject ID referencing the document in `users/{userId}/subjects/{subjectId}`.
+  /// Empty string means no subject assigned.
+  final String subjectId;
 
   const Task({
     required this.id,
@@ -68,7 +68,7 @@ class Task {
     this.isCompleted = false,
     this.subtasks = const [],
     this.chatId = '',
-    this.subject = '',
+    this.subjectId = '',
   });
 
   bool get isDueToday {
@@ -95,7 +95,7 @@ class Task {
     bool? isCompleted,
     List<SubTask>? subtasks,
     String? chatId,
-    String? subject,
+    String? subjectId,
   }) {
     return Task(
       id: id ?? this.id,
@@ -108,7 +108,7 @@ class Task {
       isCompleted: isCompleted ?? this.isCompleted,
       subtasks: subtasks ?? this.subtasks,
       chatId: chatId ?? this.chatId,
-      subject: subject ?? this.subject,
+      subjectId: subjectId ?? this.subjectId,
     );
   }
 
@@ -121,7 +121,7 @@ class Task {
       'isCompleted': isCompleted,
       'subtasks': subtasks.map((s) => s.toFirestore()).toList(),
       'chatId': chatId,
-      'subject': subject,
+      'subjectId': subjectId,
     };
   }
 
@@ -138,7 +138,7 @@ class Task {
           .map((s) => SubTask.fromFirestore(Map<String, dynamic>.from(s as Map)))
           .toList(),
       chatId: data['chatId'] as String? ?? '',
-      subject: data['subject'] as String? ?? '',
+      subjectId: data['subjectId'] as String? ?? '',
     );
   }
 }
