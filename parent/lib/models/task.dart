@@ -29,16 +29,23 @@ class Task {
   final String title;
   final DateTime? createdAt;
   final DateTime? dueDate;
+  final DateTime? completedAt;
   final bool isCompleted;
   final List<SubTask> subtasks;
+
+  /// Subject label for the task (e.g. '수학', '영어').
+  /// Empty string means no subject assigned — aggregated as '기타'.
+  final String subject;
 
   const Task({
     required this.id,
     required this.title,
     this.createdAt,
     this.dueDate,
+    this.completedAt,
     this.isCompleted = false,
     this.subtasks = const [],
+    this.subject = '',
   });
 
   bool get isDueToday {
@@ -68,12 +75,14 @@ class Task {
       title: data['title'] as String? ?? '',
       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
       dueDate: (data['dueDate'] as Timestamp?)?.toDate(),
+      completedAt: (data['completedAt'] as Timestamp?)?.toDate(),
       isCompleted: data['isCompleted'] as bool? ?? false,
       subtasks: subtasksData
           .map(
             (s) => SubTask.fromFirestore(Map<String, dynamic>.from(s as Map)),
           )
           .toList(),
+      subject: data['subject'] as String? ?? '',
     );
   }
 }

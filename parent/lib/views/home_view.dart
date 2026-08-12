@@ -8,6 +8,7 @@ import '../viewmodels/home_viewmodel.dart';
 import '../widgets/bouncy_button.dart';
 
 import 'parent_settings_view.dart';
+import 'report_view.dart';
 
 
 /// Parent App Main Home View.
@@ -138,18 +139,25 @@ class _HomeHeader extends StatelessWidget {
 // 부모 리포트 Button (placeholder)
 // ─────────────────────────────────────────────
 
-/// Prominent "부모 리포트" CTA — placeholder for the report screen.
+/// Prominent "부모 리포트" CTA — navigates to the Report screen.
 class _ReportButton extends StatelessWidget {
   const _ReportButton();
 
   @override
   Widget build(BuildContext context) {
+    final vm = context.read<HomeViewModel>();
     return GestureDetector(
       onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('부모 리포트 준비 중입니다.'),
-            duration: Duration(seconds: 1),
+        // childName is passed as a constructor param on _HomeContent,
+        // but we access it here through the widget tree via context.
+        final childName =
+            (context.findAncestorWidgetOfExactType<_HomeContent>()?.childName) ?? '';
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => ReportView(
+              childUid: vm.childUid,
+              childName: childName,
+            ),
           ),
         );
       },
