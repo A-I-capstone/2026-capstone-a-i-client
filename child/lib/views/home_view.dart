@@ -18,6 +18,8 @@ import '../widgets/pulse_loader.dart';
 import '../widgets/task_add_edit_sheet.dart';
 import 'chat_view.dart';
 import 'settings_view.dart';
+import '../main.dart'
+    show modelName, systemPrompt, titleModelName, titleSystemPrompt;
 
 // TODO: 과제 -> 채팅으로 들어갔을 때 프롬프트에 과제 내용이 반영되도록 하기
 // TODO: 부모 앱에서 일단 연동화면 들어가면 못 나가는 버그? 고치기
@@ -364,7 +366,13 @@ class _TaskRowTile extends StatelessWidget {
             child: TaskAddEditSheet(
               task: task,
               onSave: (title, dueDate, subtasks, subjectId) {
-                homeViewModel.editTask(task, title, dueDate, subtasks, subjectId);
+                homeViewModel.editTask(
+                  task,
+                  title,
+                  dueDate,
+                  subtasks,
+                  subjectId,
+                );
               },
             ),
           ),
@@ -467,94 +475,97 @@ class _TaskRowTile extends StatelessWidget {
               ),
             ),
 
-          // Subtasks list if any
-          if (task.subtasks.isNotEmpty) ...[
-            const Divider(color: AppColors.border, height: 1, thickness: 1),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 12, 8),
-              child: Column(
-                children: [
-                  for (final st in task.subtasks) ...[
-                    GestureDetector(
-                      onTap: () => homeViewModel.toggleSubtask(task.id, st.id),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Row(
-                          children: [
-                            Icon(
-                              st.isCompleted
-                                  ? Icons.check_box_rounded
-                                  : Icons.check_box_outline_blank_rounded,
-                              color: AppColors.ink,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                st.title,
-                                style: AppTypography.bodyMedium.copyWith(
-                                  decoration: st.isCompleted
-                                      ? TextDecoration.lineThrough
-                                      : null,
-                                  color: st.isCompleted
-                                      ? AppColors.slate
-                                      : AppColors.ink,
+            // Subtasks list if any
+            if (task.subtasks.isNotEmpty) ...[
+              const Divider(color: AppColors.border, height: 1, thickness: 1),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 12, 8),
+                child: Column(
+                  children: [
+                    for (final st in task.subtasks) ...[
+                      GestureDetector(
+                        onTap: () =>
+                            homeViewModel.toggleSubtask(task.id, st.id),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            children: [
+                              Icon(
+                                st.isCompleted
+                                    ? Icons.check_box_rounded
+                                    : Icons.check_box_outline_blank_rounded,
+                                color: AppColors.ink,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  st.title,
+                                  style: AppTypography.bodyMedium.copyWith(
+                                    decoration: st.isCompleted
+                                        ? TextDecoration.lineThrough
+                                        : null,
+                                    color: st.isCompleted
+                                        ? AppColors.slate
+                                        : AppColors.ink,
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
-
-          // Chat room navigation button
-          Container(
-            width: double.infinity,
-            decoration: const BoxDecoration(
-              border: Border(top: BorderSide(color: AppColors.ink, width: 1.5)),
-            ),
-            child: InkWell(
-              onTap: () => _navigateToChat(context, task),
-              borderRadius: const BorderRadius.vertical(
-                bottom: Radius.circular(14),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.chat_bubble_outline_rounded,
-                      color: AppColors.ink,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'AI 학습 도움 받기',
-                      style: AppTypography.bodyMedium.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.ink,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    const Icon(
-                      Icons.chevron_right_rounded,
-                      color: AppColors.ink,
-                      size: 20,
-                    ),
+                    ],
                   ],
                 ),
               ),
+            ],
+
+            // Chat room navigation button
+            Container(
+              width: double.infinity,
+              decoration: const BoxDecoration(
+                border: Border(
+                  top: BorderSide(color: AppColors.ink, width: 1.5),
+                ),
+              ),
+              child: InkWell(
+                onTap: () => _navigateToChat(context, task),
+                borderRadius: const BorderRadius.vertical(
+                  bottom: Radius.circular(14),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.chat_bubble_outline_rounded,
+                        color: AppColors.ink,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'AI 학습 도움 받기',
+                        style: AppTypography.bodyMedium.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.ink,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      const Icon(
+                        Icons.chevron_right_rounded,
+                        color: AppColors.ink,
+                        size: 20,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
     );
   }
 
@@ -562,15 +573,15 @@ class _TaskRowTile extends StatelessWidget {
     final authProvider = context.read<BaseAuthProvider>();
     final userId = authProvider.currentUid ?? '';
 
-    // Create providerManager on demand
+    // Create providerManager on demand using Remote Config values
     final providerManager = ProviderManager(
       provider: GeminiProvider(
-        modelName: 'gemini-3.6-flash',
-        systemPrompt: '너는 초등학생을 돕는 친절하고 명확한 AI 학습 도우미야.',
+        modelName: modelName,
+        systemPrompt: systemPrompt,
       ),
       titleProvider: GeminiProvider(
-        modelName: 'gemini-3.5-flash-lite',
-        systemPrompt: '제목 요약 도우미',
+        modelName: titleModelName,
+        systemPrompt: titleSystemPrompt,
       ),
     );
 
