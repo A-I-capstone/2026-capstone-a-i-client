@@ -1,5 +1,6 @@
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared/shared.dart';
@@ -11,17 +12,49 @@ import 'views/child_list_view.dart';
 import 'views/pairing_view.dart';
 import 'views/terms_view.dart';
 
+late String modelName;
+late String reportSystemPrompt;
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
+  /*
+  TODO: uncomment later
   await FirebaseAppCheck.instance.activate(
     providerAndroid: AndroidDebugProvider(),
     providerWeb: WebDebugProvider(),
   );
+  */
+
+  final remoteConfig = FirebaseRemoteConfig.instance;
+  await remoteConfig.setConfigSettings(
+    RemoteConfigSettings(
+      fetchTimeout: const Duration(seconds: 10),
+      minimumFetchInterval: const Duration(seconds: 10),
+    ),
+  );
+
+  await remoteConfig.setDefaults(const {'model_name': 'gemini-3.6-flash'});
+
+  try {
+    await remoteConfig.fetchAndActivate();
+  } catch (e) {
+    debugPrint('Error fetching Remote Config: $e');
+  }
+
+  modelName = remoteConfig.getString('model_name');
+  reportSystemPrompt = remoteConfig.getString('report_system_prompt');
+
+  debugPrint('Remote Config model_name: $modelName');
+  debugPrint('Remote Config report_system_prompt set');
+
+  remoteConfig.onConfigUpdated.listen((event) async {
+    await remoteConfig.activate();
+    modelName = remoteConfig.getString('model_name');
+    reportSystemPrompt = remoteConfig.getString('report_system_prompt');
+  });
 
   // 1. Auth via shared BaseAuthProvider (FirebaseAuthProvider)
   final BaseAuthProvider authProvider = FirebaseAuthProvider();
@@ -92,4 +125,3 @@ class ParentApp extends StatelessWidget {
     );
   }
 }
-

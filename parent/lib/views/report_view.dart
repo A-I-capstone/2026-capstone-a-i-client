@@ -2,6 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../main.dart';
 import '../models/task.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
@@ -25,7 +26,12 @@ class ReportView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => ReportViewModel(childUid: childUid, childName: childName),
+      create: (_) => ReportViewModel(
+        childUid: childUid,
+        childName: childName,
+        modelName: modelName,
+        systemPrompt: reportSystemPrompt,
+      ),
       child: _ReportContent(childName: childName),
     );
   }
@@ -202,7 +208,8 @@ class _PeriodTab extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────
-// AI summary placeholder
+// ─────────────────────────────────────────────
+// AI summary section
 // ─────────────────────────────────────────────
 
 class _AiSummarySection extends StatelessWidget {
@@ -210,6 +217,8 @@ class _AiSummarySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final vm = context.watch<ReportViewModel>();
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
       child: Column(
@@ -217,22 +226,124 @@ class _AiSummarySection extends StatelessWidget {
         children: [
           const _SectionEyebrow(label: 'AI 요약'),
           const SizedBox(height: 12),
-          Container(
-            width: double.infinity,
-            constraints: const BoxConstraints(minHeight: 120),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.border, width: 1.5),
+          if (vm.isSummaryLoading)
+            const _AiSummaryLoadingCard()
+          else if (vm.summaryError.isNotEmpty)
+            _AiSummaryErrorCard(
+              message: vm.summaryError,
+              onRetry: () => vm.generateAiSummary(),
+            )
+          else if (vm.hasSummary)
+            _AiSummaryResultCard(summaryText: vm.aiSummary)
+          else
+            _AiSummaryErrorCard(
+              message: '요약 정보를 준비하지 못했어요.',
+              onRetry: () => vm.generateAiSummary(),
             ),
-            child: Text(
-              '이 영역에 AI가 분석한 학습 요약이 표시됩니다.\n어려워한 내용, 능숙한 내용, 더 탐구한 내용 등을 확인할 수 있어요.',
-              style: AppTypography.bodyMedium.copyWith(
-                color: AppColors.slate,
-                height: 1.6,
-              ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AiSummaryLoadingCard extends StatelessWidget {
+  const _AiSummaryLoadingCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      constraints: const BoxConstraints(minHeight: 120),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border, width: 1.5),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const CircularProgressIndicator(
+            color: AppColors.ink,
+            strokeWidth: 3,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'AI가 학습 내용을 분석 중이에요...',
+            style: AppTypography.bodyMedium.copyWith(
+              color: AppColors.slate,
+              fontWeight: FontWeight.w600,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AiSummaryResultCard extends StatelessWidget {
+  final String summaryText;
+
+  const _AiSummaryResultCard({required this.summaryText});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border, width: 1.5),
+      ),
+      child: SelectableText(
+        summaryText,
+        style: AppTypography.bodyMedium.copyWith(
+          color: AppColors.ink,
+          height: 1.65,
+          fontSize: 15,
+        ),
+      ),
+    );
+  }
+}
+
+class _AiSummaryErrorCard extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+
+  const _AiSummaryErrorCard({
+    required this.message,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border, width: 1.5),
+      ),
+      child: Column(
+        children: [
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: AppTypography.bodyMedium.copyWith(
+              color: AppColors.slate,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 12),
+          BouncyButton(
+            label: '다시 시도',
+            backgroundColor: AppColors.sunriseYellow,
+            foregroundColor: AppColors.ink,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            onTap: onRetry,
           ),
         ],
       ),

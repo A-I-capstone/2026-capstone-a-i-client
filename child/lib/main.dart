@@ -20,12 +20,12 @@ late String modelName;
 late String systemPrompt;
 late String titleModelName;
 late String titleSystemPrompt;
-late String reportSystemPrompt;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   /*
+  // TODO: uncomment later
   await FirebaseAppCheck.instance.activate(
     providerAndroid: AndroidDebugProvider(),
     providerWeb: WebDebugProvider(),
@@ -55,7 +55,6 @@ void main() async {
   systemPrompt = remoteConfig.getString('system_prompt');
   titleModelName = remoteConfig.getString('title_model_name');
   titleSystemPrompt = remoteConfig.getString('title_system_prompt');
-  reportSystemPrompt = remoteConfig.getString('report_system_prompt');
 
   if (systemPrompt.isEmpty) {
     throw Exception(
@@ -68,7 +67,6 @@ void main() async {
   debugPrint('Remote Config title_model_name: $titleModelName');
   debugPrint('Remote Config system_prompt set');
   debugPrint('Remote Config title_system_prompt set');
-  debugPrint('Remote Config report_system_prompt set');
 
   remoteConfig.onConfigUpdated.listen((event) async {
     await remoteConfig.activate();
@@ -76,7 +74,6 @@ void main() async {
     systemPrompt = remoteConfig.getString('system_prompt');
     titleModelName = remoteConfig.getString('title_model_name');
     titleSystemPrompt = remoteConfig.getString('title_system_prompt');
-    reportSystemPrompt = remoteConfig.getString('report_system_prompt');
   });
 
   // Auth
