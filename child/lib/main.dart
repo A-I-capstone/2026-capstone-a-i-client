@@ -10,23 +10,27 @@ import 'views/home_view.dart';
 import 'views/nickname_setup_view.dart';
 
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_app_check/firebase_app_check.dart';
 import 'firebase_options.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'services/user/user_repository.dart';
 
 const _kPairingComplete = 'pairing_complete';
 
-late final String _modelName;
-late final String _systemPrompt;
+late String modelName;
+late String systemPrompt;
+late String titleModelName;
+late String titleSystemPrompt;
+late String reportSystemPrompt;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  /*
   await FirebaseAppCheck.instance.activate(
     providerAndroid: AndroidDebugProvider(),
     providerWeb: WebDebugProvider(),
   );
+  */
 
   final remoteConfig = FirebaseRemoteConfig.instance;
   await remoteConfig.setConfigSettings(
@@ -37,7 +41,8 @@ void main() async {
   );
 
   await remoteConfig.setDefaults(const {
-    "model_name": "gemini-3.6-flash",
+    'model_name': 'gemini-3.6-flash',
+    'title_model_name': 'gemini-3.6-flash',
   });
 
   try {
@@ -46,23 +51,32 @@ void main() async {
     debugPrint('Error fetching Remote Config: $e');
   }
 
-  _modelName = remoteConfig.getString('model_name');
-  _systemPrompt = remoteConfig.getString('system_prompt');
+  modelName = remoteConfig.getString('model_name');
+  systemPrompt = remoteConfig.getString('system_prompt');
+  titleModelName = remoteConfig.getString('title_model_name');
+  titleSystemPrompt = remoteConfig.getString('title_system_prompt');
+  reportSystemPrompt = remoteConfig.getString('report_system_prompt');
 
-  if (_systemPrompt.isEmpty) {
+  if (systemPrompt.isEmpty) {
     throw Exception(
       '[Config Error] system_prompt is empty. '
       'Please set a valid system prompt in Firebase Remote Config.',
     );
   }
 
-  debugPrint('Remote Config model_name: $_modelName');
+  debugPrint('Remote Config model_name: $modelName');
+  debugPrint('Remote Config title_model_name: $titleModelName');
   debugPrint('Remote Config system_prompt set');
+  debugPrint('Remote Config title_system_prompt set');
+  debugPrint('Remote Config report_system_prompt set');
 
   remoteConfig.onConfigUpdated.listen((event) async {
     await remoteConfig.activate();
-    _modelName = remoteConfig.getString("model_name");
-    _systemPrompt = remoteConfig.getString("system_prompt");
+    modelName = remoteConfig.getString('model_name');
+    systemPrompt = remoteConfig.getString('system_prompt');
+    titleModelName = remoteConfig.getString('title_model_name');
+    titleSystemPrompt = remoteConfig.getString('title_system_prompt');
+    reportSystemPrompt = remoteConfig.getString('report_system_prompt');
   });
 
   // Auth
@@ -89,11 +103,7 @@ void main() async {
           value: settingsViewModel,
         ),
       ],
-      child: CapstoneAiApp(
-        userId: userId,
-        isPaired: isPaired,
-        prefs: prefs,
-      ),
+      child: CapstoneAiApp(userId: userId, isPaired: isPaired, prefs: prefs),
     ),
   );
 }

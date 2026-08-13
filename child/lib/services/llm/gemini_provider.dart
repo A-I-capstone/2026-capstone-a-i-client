@@ -10,17 +10,15 @@ import 'base_llm_provider.dart';
 /// Uses [FirebaseAI.googleAI] and the Chat Session API so that conversation
 /// history can be injected without changing the public interface.
 class GeminiProvider implements BaseLLMProvider {
-  final String _modelName;
-  final String _systemPrompt;
+  final String modelName;
+  final String systemPrompt;
 
   late final GenerativeModel _model;
 
-  GeminiProvider({required String modelName, required String systemPrompt})
-    : _modelName = modelName,
-      _systemPrompt = systemPrompt {
+  GeminiProvider({required this.modelName, required this.systemPrompt}) {
     _model = FirebaseAI.googleAI().generativeModel(
-      model: _modelName,
-      systemInstruction: Content.system(_systemPrompt),
+      model: modelName,
+      systemInstruction: Content.system(systemPrompt),
     );
   }
 
@@ -35,6 +33,8 @@ class GeminiProvider implements BaseLLMProvider {
         .whereType<ChatMessage>()
         .map((m) => m.toContent())
         .toList();
+
+    _printDebugContext(userMessage, history);
 
     final chat = _model.startChat(history: contentHistory);
 
@@ -51,6 +51,40 @@ class GeminiProvider implements BaseLLMProvider {
       // discard the partial buffer and show a child-friendly fallback.
       rethrow;
     }
+  }
+
+  void _printDebugContext(String userMessage, List history) {
+    final sb = StringBuffer();
+    sb.writeln('==================== [Chat LLM Context] ====================');
+    sb.writeln('[SYSTEM PROMPT]');
+    sb.writeln(systemPrompt);
+    sb.writeln('\n[CONVERSATION HISTORY (${history.length} items)]');
+
+    if (history.isEmpty) {
+      sb.writeln('(Empty history)');
+    } else {
+      for (var i = 0; i < history.length; i++) {
+        final item = history[i];
+        if (item is ChatMessage) {
+          final role = item.isUser ? 'USER' : 'ASSISTANT';
+          sb.writeln('  [$i] [$role]: ${item.text}');
+        } else if (item is Content) {
+          final role = item.role == 'user' ? 'USER' : 'ASSISTANT';
+          final text = item.parts
+              .map((p) => p is TextPart ? p.text : p.toString())
+              .join('');
+          sb.writeln('  [$i] [$role]: $text');
+        } else {
+          sb.writeln('  [$i]: $item');
+        }
+      }
+    }
+
+    sb.writeln('\n[CURRENT USER MESSAGE]');
+    sb.writeln(userMessage);
+    sb.writeln('============================================================');
+
+    debugPrint(sb.toString());
   }
 
   @override
