@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:shared/shared.dart';
 
 import '../models/task.dart';
+import '../utils/report_prompt_builder.dart';
 
 /// Time period filter options for the report screen.
 enum TimePeriod { week, month, quarter, all }
@@ -38,14 +40,18 @@ enum SubmissionStatus {
 /// ViewModel for the Parent Report Screen.
 ///
 /// Reads ALL of the child's tasks from Firestore in real-time and exposes
-/// period-filtered, aggregated state to the view.
+/// period-filtered, aggregated state to the view, as well as AI summary generation.
 class ReportViewModel extends ChangeNotifier {
   final String childUid;
   final String childName;
+  final String modelName;
+  final String systemPrompt;
 
   ReportViewModel({
     required this.childUid,
     required this.childName,
+    required this.modelName,
+    required this.systemPrompt,
   }) {
     _subscribeToTasks();
   }
@@ -55,8 +61,19 @@ class ReportViewModel extends ChangeNotifier {
   TimePeriod _period = TimePeriod.week;
   StreamSubscription<QuerySnapshot>? _subscription;
 
+  // ── AI Summary State ─────────────────────────────────────────────────────
+
+  String _aiSummary = '';
+  bool _isSummaryLoading = false;
+  String _summaryError = '';
+
   bool get isLoading => _isLoading;
   TimePeriod get period => _period;
+
+  String get aiSummary => _aiSummary;
+  bool get isSummaryLoading => _isSummaryLoading;
+  String get summaryError => _summaryError;
+  bool get hasSummary => _aiSummary.isNotEmpty;
 
   // ── Period filter ────────────────────────────────────────────────────────
 
@@ -64,6 +81,7 @@ class ReportViewModel extends ChangeNotifier {
     if (_period == period) return;
     _period = period;
     notifyListeners();
+    generateAiSummary();
   }
 
   DateTime? get _cutoff {
@@ -159,6 +177,100 @@ class ReportViewModel extends ChangeNotifier {
       submissionStats[SubmissionStatus.lateOrMissed] ?? 0;
   int get inProgressCount => submissionStats[SubmissionStatus.inProgress] ?? 0;
 
+  // ── AI Summary Generation ─────────────────────────────────────────────────
+
+  /// Generates the AI summary automatically upon entry or period change.
+  Future<void> generateAiSummary() async {
+    _isSummaryLoading = true;
+    _summaryError = '';
+    _aiSummary = '';
+    notifyListeners();
+
+    try {
+      final chatSnippets = await _fetchChatSnippets();
+
+      final prompt = ReportPromptBuilder.build(
+        childName: childName,
+        period: _period,
+        filteredTasks: filteredTasks,
+        chatSnippets: chatSnippets,
+      );
+
+      final provider = GeminiReportProvider(
+        modelName: modelName.isNotEmpty ? modelName : 'gemini-3.6-flash',
+        systemPrompt: systemPrompt,
+      );
+
+      final result = await provider.generateText(prompt);
+      if (result.trim().isEmpty) {
+        _summaryError = '요약 내용을 생성하지 못했어요. 잠시 후 다시 시도해 주세요.';
+      } else {
+        _aiSummary = result.trim();
+      }
+    } catch (e, st) {
+      debugPrint('[ReportViewModel] generateAiSummary error: $e\n$st');
+      _summaryError = '요약을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.';
+    } finally {
+      _isSummaryLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Fetches condensed user chat messages for tasks within the active period.
+  Future<Map<String, List<String>>> _fetchChatSnippets() async {
+    final snippets = <String, List<String>>{};
+
+    // Compression rule: skip chat snippets for long periods or large task counts
+    if (_period == TimePeriod.quarter ||
+        _period == TimePeriod.all ||
+        filteredTasks.length > 15) {
+      return snippets;
+    }
+
+    final tasksWithChat = filteredTasks
+        .where((t) => t.chatId.isNotEmpty)
+        .take(3)
+        .toList();
+
+    for (final task in tasksWithChat) {
+      try {
+        final messagesSnap = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(childUid)
+            .collection('tasks')
+            .doc(task.id)
+            .collection('chats')
+            .doc(task.chatId)
+            .collection('messages')
+            .orderBy('createdAt', descending: false)
+            .limit(20)
+            .get();
+
+        final userMsgs = messagesSnap.docs
+            .where((doc) => doc.data()['role'] == 'user')
+            .map((doc) => doc.data()['text'] as String? ?? '')
+            .where((text) => text.trim().isNotEmpty)
+            .toList();
+
+        if (userMsgs.isNotEmpty) {
+          if (userMsgs.length > 5) {
+            snippets[task.title] = [
+              ...userMsgs.take(2),
+              '...',
+              ...userMsgs.skip(userMsgs.length - 2),
+            ];
+          } else {
+            snippets[task.title] = userMsgs;
+          }
+        }
+      } catch (e) {
+        debugPrint('[ReportViewModel] _fetchChatSnippets error: $e');
+      }
+    }
+
+    return snippets;
+  }
+
   // ── Firestore subscription ────────────────────────────────────────────────
 
   void _subscribeToTasks() {
@@ -181,6 +293,7 @@ class ReportViewModel extends ChangeNotifier {
                   .toList();
               _isLoading = false;
               notifyListeners();
+              generateAiSummary();
             },
             onError: (_) {
               // Fail silently — show empty state rather than error screen.

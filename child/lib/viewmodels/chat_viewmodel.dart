@@ -34,10 +34,10 @@ class ChatViewModel extends ChangeNotifier {
     required BaseAuthProvider authProvider,
     required this.task,
     required String userId,
-  })  : _providerManager = providerManager,
-        _repository = repository,
-        _authProvider = authProvider,
-        _userId = userId;
+  }) : _providerManager = providerManager,
+       _repository = repository,
+       _authProvider = authProvider,
+       _userId = userId;
 
   // ---------------------------------------------------------------------------
   // Public getters
@@ -125,9 +125,12 @@ class ChatViewModel extends ChangeNotifier {
     // Construct prompt context with Task info
     final subtaskInfo = task.subtasks.isEmpty
         ? '세부 과제 없음'
-        : task.subtasks.map((s) => '- ${s.title} (${s.isCompleted ? "완료" : "미완료"})').join('\n');
+        : task.subtasks
+              .map((s) => '- ${s.title} (${s.isCompleted ? "완료" : "미완료"})')
+              .join('\n');
 
-    final contextPrompt = '[과제 정보]\n- 과제 제목: ${task.title}\n- 세부 과제:\n$subtaskInfo\n\n[사용자 질문]\n$trimmedText';
+    final contextPrompt =
+        '[과제 정보]\n- 과제 제목: ${task.title}\n- 세부 과제:\n$subtaskInfo\n\n[사용자 질문]\n$trimmedText';
 
     try {
       debugPrint('[ChatViewModel] sendMessage() → Task AI 스트리밍 시작');
@@ -156,7 +159,7 @@ class ChatViewModel extends ChangeNotifier {
         ChatMessage(
           id: 'fallback_${DateTime.now().millisecondsSinceEpoch}',
           sender: MessageSender.ai,
-          text: '어머, 잠깐 생각이 딴 데로 갔나 봐! 다시 한 번 이야기해 줄래?',
+          text: '잠깐 생각이 딴 데로 갔나 봐! 다시 한 번 이야기해 줄래?',
           timestamp: DateTime.now(),
         ),
       );

@@ -37,6 +37,9 @@ class Task {
   /// Empty string means no subject assigned — aggregated as '기타'.
   final String subject;
 
+  /// Chat ID associated with this task.
+  final String chatId;
+
   const Task({
     required this.id,
     required this.title,
@@ -46,6 +49,7 @@ class Task {
     this.isCompleted = false,
     this.subtasks = const [],
     this.subject = '',
+    this.chatId = '',
   });
 
   bool get isDueToday {
@@ -83,6 +87,7 @@ class Task {
           )
           .toList(),
       subject: data['subject'] as String? ?? '',
+      chatId: data['chatId'] as String? ?? '',
     );
   }
 }
