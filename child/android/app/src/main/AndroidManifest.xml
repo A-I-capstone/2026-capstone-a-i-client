@@ -3,7 +3,7 @@
     <application
         android:label="A-아이 (학생)"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/a_ai_icon">
         <activity
             android:name=".MainActivity"
             android:exported="true"
