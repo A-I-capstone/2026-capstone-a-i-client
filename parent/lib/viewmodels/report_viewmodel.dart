@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared/shared.dart';
 
+import '../models/subject.dart';
 import '../models/task.dart';
 import '../utils/report_prompt_builder.dart';
 
@@ -39,7 +40,7 @@ enum SubmissionStatus {
 
 /// ViewModel for the Parent Report Screen.
 ///
-/// Reads ALL of the child's tasks from Firestore in real-time and exposes
+/// Reads ALL of the child's tasks and subjects from Firestore in real-time and exposes
 /// period-filtered, aggregated state to the view, as well as AI summary generation.
 class ReportViewModel extends ChangeNotifier {
   final String childUid;
@@ -54,12 +55,15 @@ class ReportViewModel extends ChangeNotifier {
     required this.systemPrompt,
   }) {
     _subscribeToTasks();
+    _subscribeToSubjects();
   }
 
   List<Task> _allTasks = [];
+  Map<String, Subject> _subjectsMap = {};
   bool _isLoading = true;
   TimePeriod _period = TimePeriod.week;
   StreamSubscription<QuerySnapshot>? _subscription;
+  StreamSubscription<QuerySnapshot>? _subjectsSubscription;
 
   // ── AI Summary State ─────────────────────────────────────────────────────
 
@@ -69,11 +73,14 @@ class ReportViewModel extends ChangeNotifier {
 
   bool get isLoading => _isLoading;
   TimePeriod get period => _period;
+  Map<String, Subject> get subjectsMap => _subjectsMap;
 
   String get aiSummary => _aiSummary;
   bool get isSummaryLoading => _isSummaryLoading;
   String get summaryError => _summaryError;
   bool get hasSummary => _aiSummary.isNotEmpty;
+
+  Subject? getSubjectById(String id) => _subjectsMap[id];
 
   // ── Period filter ────────────────────────────────────────────────────────
 
@@ -114,12 +121,15 @@ class ReportViewModel extends ChangeNotifier {
   List<Task> get pendingTasks =>
       filteredTasks.where((t) => !t.isCompleted).toList();
 
-  /// Subject → completed task count. Empty subject is grouped as '기타'.
+  /// Subject → completed task count. Empty or unknown subject is grouped as '기타'.
   Map<String, int> get subjectAchievement {
     final result = <String, int>{};
     for (final task in filteredTasks) {
       if (!task.isCompleted) continue;
-      final key = task.subject.isEmpty ? '기타' : task.subject;
+      final subject = _subjectsMap[task.subjectId];
+      final key = (subject != null && subject.name.trim().isNotEmpty)
+          ? subject.name.trim()
+          : '기타';
       result[key] = (result[key] ?? 0) + 1;
     }
     return result;
@@ -149,22 +159,22 @@ class ReportViewModel extends ChangeNotifier {
         if (due == null ||
             (completedAt != null && !completedAt.isAfter(due))) {
           counts[SubmissionStatus.onTime] =
-              counts[SubmissionStatus.onTime]! + 1;
+              (counts[SubmissionStatus.onTime] ?? 0) + 1;
         } else {
           // Completed after due date.
           counts[SubmissionStatus.lateOrMissed] =
-              counts[SubmissionStatus.lateOrMissed]! + 1;
+              (counts[SubmissionStatus.lateOrMissed] ?? 0) + 1;
         }
       } else {
         // Not completed.
         if (due != null && due.isBefore(now)) {
           // Due date already passed — missed.
           counts[SubmissionStatus.lateOrMissed] =
-              counts[SubmissionStatus.lateOrMissed]! + 1;
+              (counts[SubmissionStatus.lateOrMissed] ?? 0) + 1;
         } else {
           // Still in progress.
           counts[SubmissionStatus.inProgress] =
-              counts[SubmissionStatus.inProgress]! + 1;
+              (counts[SubmissionStatus.inProgress] ?? 0) + 1;
         }
       }
     }
@@ -194,6 +204,7 @@ class ReportViewModel extends ChangeNotifier {
         period: _period,
         filteredTasks: filteredTasks,
         chatSnippets: chatSnippets,
+        subjectsMap: _subjectsMap,
       );
 
       final provider = GeminiReportProvider(
@@ -271,7 +282,7 @@ class ReportViewModel extends ChangeNotifier {
     return snippets;
   }
 
-  // ── Firestore subscription ────────────────────────────────────────────────
+  // ── Firestore subscriptions ───────────────────────────────────────────────
 
   void _subscribeToTasks() {
     if (childUid.isEmpty) {
@@ -307,9 +318,39 @@ class ReportViewModel extends ChangeNotifier {
     }
   }
 
+  void _subscribeToSubjects() {
+    if (childUid.isEmpty) return;
+
+    try {
+      _subjectsSubscription = FirebaseFirestore.instance
+          .collection('users')
+          .doc(childUid)
+          .collection('subjects')
+          .snapshots()
+          .listen(
+            (snapshot) {
+              _subjectsMap = {
+                for (final doc in snapshot.docs)
+                  doc.id: Subject.fromFirestore(doc.data(), doc.id),
+              };
+              notifyListeners();
+            },
+            onError: (_) {
+              // Fail silently — keep empty map
+              _subjectsMap = {};
+              notifyListeners();
+            },
+          );
+    } catch (_) {
+      _subjectsMap = {};
+      notifyListeners();
+    }
+  }
+
   @override
   void dispose() {
     _subscription?.cancel();
+    _subjectsSubscription?.cancel();
     super.dispose();
   }
 }

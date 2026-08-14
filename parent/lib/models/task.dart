@@ -33,9 +33,9 @@ class Task {
   final bool isCompleted;
   final List<SubTask> subtasks;
 
-  /// Subject label for the task (e.g. '수학', '영어').
-  /// Empty string means no subject assigned — aggregated as '기타'.
-  final String subject;
+  /// Subject ID referencing the document in `users/{childUid}/subjects/{subjectId}`.
+  /// Empty string means no subject assigned.
+  final String subjectId;
 
   /// Chat ID associated with this task.
   final String chatId;
@@ -48,7 +48,7 @@ class Task {
     this.completedAt,
     this.isCompleted = false,
     this.subtasks = const [],
-    this.subject = '',
+    this.subjectId = '',
     this.chatId = '',
   });
 
@@ -86,7 +86,8 @@ class Task {
             (s) => SubTask.fromFirestore(Map<String, dynamic>.from(s as Map)),
           )
           .toList(),
-      subject: data['subject'] as String? ?? '',
+      subjectId: data['subjectId'] as String? ??
+          (data['subject'] as String? ?? ''),
       chatId: data['chatId'] as String? ?? '',
     );
   }

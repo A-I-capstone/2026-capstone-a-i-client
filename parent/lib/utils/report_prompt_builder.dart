@@ -1,3 +1,4 @@
+import '../models/subject.dart';
 import '../models/task.dart';
 import '../viewmodels/report_viewmodel.dart';
 
@@ -10,8 +11,18 @@ class ReportPromptBuilder {
     required TimePeriod period,
     required List<Task> filteredTasks,
     required Map<String, List<String>> chatSnippets,
+    Map<String, Subject> subjectsMap = const {},
   }) {
     final buffer = StringBuffer();
+
+    String getSubjectName(String subjectId) {
+      if (subjectId.isEmpty) return '기타';
+      final s = subjectsMap[subjectId];
+      if (s != null && s.name.trim().isNotEmpty) {
+        return s.name.trim();
+      }
+      return '기타';
+    }
 
     buffer.writeln('아동 이름: $childName');
     buffer.writeln('분석 대상 기간: ${period.label}');
@@ -46,7 +57,7 @@ class ReportPromptBuilder {
     // 2. Subject breakdown
     final subjectStats = <String, Map<String, int>>{};
     for (final task in filteredTasks) {
-      final subject = task.subject.isEmpty ? '기타' : task.subject;
+      final subject = getSubjectName(task.subjectId);
       subjectStats.putIfAbsent(subject, () => {'completed': 0, 'overdue': 0});
 
       if (task.isCompleted) {
@@ -81,7 +92,7 @@ class ReportPromptBuilder {
         final dueStr = t.dueDate != null
             ? '${t.dueDate!.month}/${t.dueDate!.day}'
             : '미지정';
-        final subjectStr = t.subject.isEmpty ? '기타' : t.subject;
+        final subjectStr = getSubjectName(t.subjectId);
         buffer.writeln('- [$subjectStr] ${t.title} (마감일: $dueStr)');
       }
       buffer.writeln();
@@ -91,7 +102,7 @@ class ReportPromptBuilder {
     if (completed.isNotEmpty && completed.length <= 10) {
       buffer.writeln('[완료된 과제 리스트]');
       for (final t in completed) {
-        final subjectStr = t.subject.isEmpty ? '기타' : t.subject;
+        final subjectStr = getSubjectName(t.subjectId);
         buffer.writeln('- [$subjectStr] ${t.title}');
       }
       buffer.writeln();

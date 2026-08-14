@@ -83,7 +83,7 @@ class _ChildListContentState extends State<_ChildListContent> {
                             vertical: 16,
                           ),
                           itemCount: viewModel.children.length,
-                          separatorBuilder: (_, __) =>
+                          separatorBuilder: (_, _) =>
                               const SizedBox(height: 16),
                           itemBuilder: (context, index) {
                             final child = viewModel.children[index];
