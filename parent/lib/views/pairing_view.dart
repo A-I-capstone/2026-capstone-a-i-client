@@ -50,6 +50,7 @@ class _ParentPairingContentState extends State<_ParentPairingContent> {
     final vm = context.watch<ParentPairingViewModel>();
 
     if (vm.isPaired) {
+      debugPrint('[Parent Pairing View] vm.isPaired=true 감지 → onPairingComplete 콜백 호출 예정');
       WidgetsBinding.instance.addPostFrameCallback((_) {
         widget.onPairingComplete();
       });

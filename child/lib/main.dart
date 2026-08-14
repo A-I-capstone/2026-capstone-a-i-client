@@ -79,10 +79,12 @@ void main() async {
   // Auth
   final BaseAuthProvider authProvider = FirebaseAuthProvider();
   final String userId = await authProvider.signInAnonymously();
+  debugPrint('[Child Main] 익명 로그인 완료: childUid=$userId');
 
   // Check pairing status
   final prefs = await SharedPreferences.getInstance();
   final isPaired = prefs.getBool(_kPairingComplete) ?? false;
+  debugPrint('[Child Main] 기존 페어링 완료 여부 (SharedPreferences): isPaired=$isPaired');
 
   final userRepository = UserRepository();
   final userViewModel = UserViewModel(repository: userRepository);
@@ -160,6 +162,9 @@ class _PairingGateState extends State<_PairingGate> {
     return ChildPairingView(
       childUid: widget.userId,
       onPaired: (familyId) async {
+        debugPrint(
+          '[Child Pairing Gate] onPaired 호출됨! familyId: $familyId → SharedPreferences 저장 및 닉네임 설정 화면 이동',
+        );
         final navigator = Navigator.of(context);
         await widget.prefs.setBool(_kPairingComplete, true);
         if (!mounted) return;
@@ -167,6 +172,7 @@ class _PairingGateState extends State<_PairingGate> {
           MaterialPageRoute(
             builder: (_) => NicknameSetupView(
               onCompleted: () {
+                debugPrint('[Child Pairing Gate] 닉네임 설정 완료 → 홈 화면으로 이동');
                 navigator.pushReplacement(
                   MaterialPageRoute(builder: (_) => const HomeView()),
                 );

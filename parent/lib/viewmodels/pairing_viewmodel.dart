@@ -40,14 +40,22 @@ class ParentPairingViewModel extends ChangeNotifier {
 
   /// Initializes pairing for [parentUid]. Generates a PIN and starts listening.
   Future<void> initialize(String parentUid) async {
-    if (_parentUid == parentUid && _currentPairingCode != null) return;
+    debugPrint('[Parent Pairing VM] initialize 호출 (parentUid: $parentUid)');
+    if (_parentUid == parentUid && _currentPairingCode != null) {
+      debugPrint('[Parent Pairing VM] 이미 동일 parentUid로 초기화됨, 스킵');
+      return;
+    }
     _parentUid = parentUid;
     await generateNewCode();
   }
 
   /// Generates a new PIN and resets the 5-minute countdown.
   Future<void> generateNewCode() async {
-    if (_parentUid.isEmpty) return;
+    debugPrint('[Parent Pairing VM] generateNewCode 호출 (parentUid: $_parentUid)');
+    if (_parentUid.isEmpty) {
+      debugPrint('[Parent Pairing VM] parentUid가 비어 있어 PIN 생성 중단');
+      return;
+    }
 
     _isLoading = true;
     notifyListeners();
@@ -61,11 +69,14 @@ class ParentPairingViewModel extends ChangeNotifier {
       _remainingSeconds = 300;
 
       if (pairingCode != null) {
+        debugPrint('[Parent Pairing VM] PIN 생성 성공: ${pairingCode.code}, 타이머 및 구독 시작');
         _startTimer();
         _subscribeToPairingStatus(pairingCode.code);
+      } else {
+        debugPrint('[Parent Pairing VM] PIN 생성 실패 (pairingCode == null)');
       }
     } catch (e, st) {
-      debugPrint('[ParentPairingViewModel] generateNewCode error: $e\n$st');
+      debugPrint('[Parent Pairing VM] generateNewCode 예외 발생: $e\n$st');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -80,17 +91,19 @@ class ParentPairingViewModel extends ChangeNotifier {
         notifyListeners();
       } else {
         // Expired after 5 minutes -> Auto refresh
-        debugPrint('[ParentPairingViewModel] 5분 만료됨 → 자동 갱신 진행');
+        debugPrint('[Parent Pairing VM] 5분 만료됨 → 자동 갱신 진행');
         generateNewCode();
       }
     });
   }
 
   void _subscribeToPairingStatus(String code) {
+    debugPrint('[Parent Pairing VM] _subscribeToPairingStatus 시작 (code: $code)');
     _pairingSubscription =
         _pairingProvider.watchPairingStatus(code).listen((isUsed) {
+      debugPrint('[Parent Pairing VM] watchPairingStatus 이벤트 수신: isUsed=$isUsed');
       if (isUsed) {
-        debugPrint('[ParentPairingViewModel] isUsed=true 수신 → 연동 완료!');
+        debugPrint('[Parent Pairing VM] isUsed=true 확인됨 → 연동 완료 처리!');
         _isPaired = true;
         _timer?.cancel();
         notifyListeners();

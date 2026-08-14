@@ -42,12 +42,11 @@ dependencies:
   flutter_secure_storage: ^10.3.1
   encrypt: ^5.0.3
   google_generative_ai: ^0.4.7
-  firebase_core: ^4.12.1
-  firebase_ai: ^3.14.1
-  firebase_app_check: ^0.4.6
-  firebase_remote_config: ^6.5.5
-  firebase_auth: ^6.5.5
-  cloud_firestore: ^6.4.1
+  firebase_core: ^4.13.0
+  firebase_ai: ^3.15.0
+  firebase_remote_config: ^6.5.6
+  firebase_auth: ^6.5.7
+  cloud_firestore: ^6.8.0
   shared_preferences: ^2.5.5
   flutter_markdown: ^0.7.4+1
   pinput: ^5.0.0

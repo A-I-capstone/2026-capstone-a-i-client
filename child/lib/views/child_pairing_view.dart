@@ -53,6 +53,9 @@ class _ChildPairingContentState extends State<_ChildPairingContent> {
     final vm = context.watch<ChildPairingViewModel>();
 
     if (vm.isPaired) {
+      debugPrint(
+        '[Child Pairing View] vm.isPaired=true 감지! familyId: ${vm.familyId} → onPaired 콜백 호출 예정',
+      );
       WidgetsBinding.instance.addPostFrameCallback((_) {
         widget.onPaired?.call(vm.familyId);
       });
@@ -201,7 +204,10 @@ class _PinInputPanel extends StatelessWidget {
           focusedPinTheme: focusedPinTheme,
           onCompleted: isLoading
               ? null
-              : (code) => vm.submitCode(code: code, childUid: childUid),
+              : (code) {
+                  debugPrint('[Child Pairing View] PIN 입력 완료 이벤트: "$code"');
+                  vm.submitCode(code: code, childUid: childUid);
+                },
         ),
         const SizedBox(height: 24),
         if (isLoading)
@@ -240,13 +246,17 @@ class _QrScannerPanelState extends State<_QrScannerPanel> {
                   if (_scanned) return;
                   final barcode = capture.barcodes.firstOrNull;
                   final raw = barcode?.rawValue ?? '';
+                  debugPrint('[Child Pairing View] QR 코드 감지: "$raw"');
                   if (raw.length == 6 && RegExp(r'^\d{6}$').hasMatch(raw)) {
                     _scanned = true;
+                    debugPrint('[Child Pairing View] 유효한 6자리 QR 코드 확인됨 → 제출');
                     vm
                         .submitCode(code: raw, childUid: widget.childUid)
                         .then((_) {
                       if (!vm.isPaired) _scanned = false;
                     });
+                  } else {
+                    debugPrint('[Child Pairing View] 유효하지 않은 QR 코드 형식: "$raw"');
                   }
                 },
               ),

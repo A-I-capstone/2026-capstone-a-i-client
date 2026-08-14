@@ -58,10 +58,14 @@ void main() async {
   // 1. Auth via shared BaseAuthProvider (FirebaseAuthProvider)
   final BaseAuthProvider authProvider = FirebaseAuthProvider();
   final String parentUid = await authProvider.signInAnonymously();
+  debugPrint('[Parent Main] 익명 로그인 완료: parentUid=$parentUid');
 
   // 2. Onboarding ViewModel Init (SharedPreferences)
   final onboardingViewModel = ParentOnboardingViewModel();
   await onboardingViewModel.init();
+  debugPrint(
+    '[Parent Main] 온보딩 상태 확인: termsAccepted=${onboardingViewModel.termsAccepted}, pairingComplete=${onboardingViewModel.pairingComplete}',
+  );
 
   runApp(
     MultiProvider(
