@@ -446,9 +446,38 @@ class _TaskTileText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final homeViewModel = context.watch<HomeViewModel>();
+    final subject = homeViewModel.getSubjectById(task.subjectId);
+    final dueDate = task.dueDate;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (subject != null) ...[
+          Container(
+            margin: const EdgeInsets.only(bottom: 4),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 8,
+              vertical: 2,
+            ),
+            decoration: BoxDecoration(
+              color: Color(subject.colorValue),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: AppColors.ink,
+                width: 1.5,
+              ),
+            ),
+            child: Text(
+              subject.name,
+              style: AppTypography.bodyMedium.copyWith(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: AppColors.ink,
+              ),
+            ),
+          ),
+        ],
         Text(
           task.title,
           style: AppTypography.bodyLarge.copyWith(
@@ -459,12 +488,12 @@ class _TaskTileText extends StatelessWidget {
             color: task.isCompleted ? AppColors.slate : AppColors.ink,
           ),
         ),
-        if (task.dueDate != null) ...[
+        if (dueDate != null) ...[
           const SizedBox(height: 2),
           Text(
             task.isDueToday
                 ? '(마감기한: 오늘)'
-                : '(마감기한: ${task.dueDate!.month}월 ${task.dueDate!.day}일)',
+                : '(마감기한: ${dueDate.month}월 ${dueDate.day}일)',
             style: AppTypography.bodyMedium.copyWith(
               fontSize: 13,
               fontWeight: FontWeight.w700,

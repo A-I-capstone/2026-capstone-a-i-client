@@ -442,9 +442,38 @@ class _ReportTaskTileText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final vm = context.watch<ReportViewModel>();
+    final subject = vm.getSubjectById(task.subjectId);
+    final dueDate = task.dueDate;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (subject != null) ...[
+          Container(
+            margin: const EdgeInsets.only(bottom: 4),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 8,
+              vertical: 2,
+            ),
+            decoration: BoxDecoration(
+              color: Color(subject.colorValue),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: AppColors.ink,
+                width: 1.5,
+              ),
+            ),
+            child: Text(
+              subject.name,
+              style: AppTypography.bodyMedium.copyWith(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: AppColors.ink,
+              ),
+            ),
+          ),
+        ],
         Text(
           task.title,
           style: AppTypography.bodyLarge.copyWith(
@@ -452,12 +481,12 @@ class _ReportTaskTileText extends StatelessWidget {
             fontWeight: FontWeight.w700,
           ),
         ),
-        if (task.dueDate != null) ...[
+        if (dueDate != null) ...[
           const SizedBox(height: 2),
           Text(
             isOverdue
-                ? '마감 초과: ${task.dueDate!.month}월 ${task.dueDate!.day}일'
-                : '마감: ${task.dueDate!.month}월 ${task.dueDate!.day}일',
+                ? '마감 초과: ${dueDate.month}월 ${dueDate.day}일'
+                : '마감: ${dueDate.month}월 ${dueDate.day}일',
             style: AppTypography.bodyMedium.copyWith(
               fontSize: 13,
               color: isOverdue ? AppColors.tangerine : AppColors.slate,
