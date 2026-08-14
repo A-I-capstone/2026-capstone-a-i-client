@@ -24,4 +24,8 @@ abstract class AppColors {
   static const Color periwinkle = Color(0xFF7B8BBD);
   static const Color mint = Color(0xFF8BE5B5);
   static const Color tealCta = Color(0xFF5AC1BC);
+
+  // Overdue / Urgent indicators (Child-friendly pastel red and readable text)
+  static const Color overdueRed = Color(0xFFFADBD8);
+  static const Color overdueText = Color(0xFFC0392B);
 }

@@ -13,19 +13,18 @@ import '../services/subject/firestore_subject_repository.dart';
 import '../services/task/firestore_task_repository.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
+import '../viewmodels/calendar_viewmodel.dart';
 import '../viewmodels/chat_viewmodel.dart';
 import '../viewmodels/home_viewmodel.dart';
 import '../viewmodels/subject_viewmodel.dart';
 import '../widgets/bouncy_button.dart';
 import '../widgets/pulse_loader.dart';
 import '../widgets/task_add_edit_sheet.dart';
+import 'calendar_view.dart';
 import 'chat_view.dart';
 import 'settings_view.dart';
 
-// TODO: 과제 -> 채팅으로 들어갔을 때 프롬프트에 과제 내용이 반영되도록 하기
-// TODO: 부모 앱에서 일단 연동화면 들어가면 못 나가는 버그? 고치기
-
-/// Main Home view for the child app based on task checklist & learning assistance.
+/// Main Home view for the child app based on task checklist & calendar.
 class HomeView extends StatelessWidget {
   const HomeView({super.key});
 
@@ -48,45 +47,100 @@ class HomeView extends StatelessWidget {
             userId: userId,
           ),
         ),
+        ChangeNotifierProvider(
+          create: (_) => CalendarViewModel(),
+        ),
       ],
       child: const _HomeViewContent(),
     );
   }
 }
 
-class _HomeViewContent extends StatelessWidget {
+class _HomeViewContent extends StatefulWidget {
   const _HomeViewContent();
 
   @override
+  State<_HomeViewContent> createState() => _HomeViewContentState();
+}
+
+class _HomeViewContentState extends State<_HomeViewContent> {
+  late final PageController _pageController;
+  int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _onTabTapped(int index) {
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
       backgroundColor: AppColors.bg,
-      body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            SliverPadding(
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate.fixed([
-                  _HomeHeader(),
-                  SizedBox(height: 16),
-                  _UrgentTaskAlert(),
-                  SizedBox(height: 16),
-                  _TaskSummarySection(),
-                  SizedBox(height: 20),
-                  _TaskControlBar(),
-                  SizedBox(height: 16),
-                ]),
-              ),
-            ),
-            _TaskListSection(),
-            SliverToBoxAdapter(
-              child: SizedBox(height: 90),
-            ),
-          ],
-        ),
+      body: PageView(
+        controller: _pageController,
+        onPageChanged: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+        children: const [
+          _TaskChecklistPage(),
+          CalendarView(),
+        ],
       ),
-      bottomNavigationBar: _HomeBottomBar(),
+      bottomNavigationBar: _HomeBottomBar(
+        currentIndex: _currentIndex,
+        onTapTab: _onTabTapped,
+      ),
+    );
+  }
+}
+
+/// The Task Checklist view (First tab of Home).
+class _TaskChecklistPage extends StatelessWidget {
+  const _TaskChecklistPage();
+
+  @override
+  Widget build(BuildContext context) {
+    return const SafeArea(
+      child: CustomScrollView(
+        slivers: [
+          SliverPadding(
+            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate.fixed([
+                _HomeHeader(),
+                SizedBox(height: 16),
+                _UrgentTaskAlert(),
+                SizedBox(height: 16),
+                _TaskSummarySection(),
+                SizedBox(height: 20),
+                _TaskControlBar(),
+                SizedBox(height: 16),
+              ]),
+            ),
+          ),
+          _TaskListSection(),
+          SliverToBoxAdapter(
+            child: SizedBox(height: 90),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -154,7 +208,7 @@ class _UrgentTaskAlert extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: const Color(0xFFFADBD8),
+        color: AppColors.overdueRed,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.ink, width: 2),
       ),
@@ -424,31 +478,42 @@ class _TaskRowTile extends StatelessWidget {
     final homeViewModel = context.read<HomeViewModel>();
     final subjectViewModel = context.watch<SubjectViewModel>();
     final subject = subjectViewModel.getSubjectById(task.subjectId);
+    final isOverdue = task.isOverdue;
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onLongPress: () => _showEditSheet(context),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _TaskCheckbox(
-            isCompleted: task.isCompleted,
-            onTap: () => homeViewModel.toggleTask(task.id),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: _TaskContent(
-              task: task,
-              subject: subject,
-              onToggleSubtask: (subtaskId) =>
-                  homeViewModel.toggleSubtask(task.id, subtaskId),
+      child: Container(
+        padding: EdgeInsets.all(isOverdue ? 12 : 0),
+        decoration: BoxDecoration(
+          color: isOverdue ? AppColors.overdueRed : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+          border: isOverdue
+              ? Border.all(color: AppColors.ink, width: 2)
+              : null,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _TaskCheckbox(
+              isCompleted: task.isCompleted,
+              onTap: () => homeViewModel.toggleTask(task.id),
             ),
-          ),
-          const SizedBox(width: 8),
-          _ChatNavButton(
-            onTap: () => _navigateToChat(context, task),
-          ),
-        ],
+            const SizedBox(width: 12),
+            Expanded(
+              child: _TaskContent(
+                task: task,
+                subject: subject,
+                onToggleSubtask: (subtaskId) =>
+                    homeViewModel.toggleSubtask(task.id, subtaskId),
+              ),
+            ),
+            const SizedBox(width: 8),
+            _ChatNavButton(
+              onTap: () => _navigateToChat(context, task),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -592,13 +657,19 @@ class _TaskContent extends StatelessWidget {
         if (dueDate != null) ...[
           const SizedBox(height: 3),
           Text(
-            task.isDueToday
-                ? '(마감기한: 오늘)'
-                : '(마감기한: ${dueDate.month}월 ${dueDate.day}일)',
+            task.isOverdue
+                ? '(마감기한 지남: ${dueDate.month}월 ${dueDate.day}일)'
+                : task.isDueToday
+                    ? '(마감기한: 오늘)'
+                    : '(마감기한: ${dueDate.month}월 ${dueDate.day}일)',
             style: AppTypography.bodyMedium.copyWith(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: task.isDueToday ? AppColors.tangerine : AppColors.slate,
+              color: task.isOverdue
+                  ? AppColors.overdueText
+                  : task.isDueToday
+                      ? AppColors.tangerine
+                      : AppColors.slate,
             ),
           ),
         ],
@@ -682,9 +753,15 @@ class _ChatNavButton extends StatelessWidget {
   }
 }
 
-/// Floating iOS-style bottom navigation bar.
+/// Floating iOS-style bottom navigation bar with animated tab switching.
 class _HomeBottomBar extends StatelessWidget {
-  const _HomeBottomBar();
+  final int currentIndex;
+  final ValueChanged<int> onTapTab;
+
+  const _HomeBottomBar({
+    required this.currentIndex,
+    required this.onTapTab,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -697,17 +774,19 @@ class _HomeBottomBar extends StatelessWidget {
           borderRadius: BorderRadius.circular(100),
           border: Border.all(color: AppColors.ink, width: 2),
         ),
-        child: const Row(
+        child: Row(
           children: [
             _BottomNavItem(
               icon: Icons.check_circle_outline_rounded,
               label: '과제',
-              isSelected: true,
+              isSelected: currentIndex == 0,
+              onTap: () => onTapTab(0),
             ),
             _BottomNavItem(
               icon: Icons.calendar_month_rounded,
               label: '캘린더',
-              isSelected: false,
+              isSelected: currentIndex == 1,
+              onTap: () => onTapTab(1),
             ),
           ],
         ),
@@ -720,34 +799,40 @@ class _BottomNavItem extends StatelessWidget {
   final IconData icon;
   final String label;
   final bool isSelected;
+  final VoidCallback onTap;
 
   const _BottomNavItem({
     required this.icon,
     required this.label,
     required this.isSelected,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            icon,
-            color: isSelected ? AppColors.ink : AppColors.slate,
-            size: 26,
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: AppTypography.bodyMedium.copyWith(
-              fontSize: 13,
-              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
               color: isSelected ? AppColors.ink : AppColors.slate,
+              size: 26,
             ),
-          ),
-        ],
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: AppTypography.bodyMedium.copyWith(
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                color: isSelected ? AppColors.ink : AppColors.slate,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

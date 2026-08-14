@@ -34,17 +34,21 @@ class HomeViewModel extends ChangeNotifier {
     final list = List<Task>.from(_tasks);
     if (_sortOption == TaskSortOption.dueDate) {
       list.sort((a, b) {
-        if (a.dueDate == null && b.dueDate == null) return 0;
-        if (a.dueDate == null) return 1;
-        if (b.dueDate == null) return -1;
-        return a.dueDate!.compareTo(b.dueDate!);
+        final aDue = a.dueDate;
+        final bDue = b.dueDate;
+        if (aDue == null && bDue == null) return 0;
+        if (aDue == null) return 1;
+        if (bDue == null) return -1;
+        return aDue.compareTo(bDue);
       });
     } else {
       list.sort((a, b) {
-        if (a.createdAt == null && b.createdAt == null) return 0;
-        if (a.createdAt == null) return 1;
-        if (b.createdAt == null) return -1;
-        return b.createdAt!.compareTo(a.createdAt!);
+        final aCreated = a.createdAt;
+        final bCreated = b.createdAt;
+        if (aCreated == null && bCreated == null) return 0;
+        if (aCreated == null) return 1;
+        if (bCreated == null) return -1;
+        return bCreated.compareTo(aCreated);
       });
     }
     return list;
@@ -59,11 +63,20 @@ class HomeViewModel extends ChangeNotifier {
   int get dueThisWeekCount =>
       _tasks.where((task) => !task.isCompleted && task.isDueThisWeek).length;
 
+  bool get hasOverdueTask => _tasks.any((task) => task.isOverdue);
+
   bool get hasUrgentTask =>
       !_isUrgentAlertDismissed &&
-      _tasks.any((task) => !task.isCompleted && task.isDueToday);
+      _tasks.any(
+        (task) => task.isOverdue || (!task.isCompleted && task.isDueToday),
+      );
 
-  String get urgentTaskMessage => '오늘이 마감일인 과제가 있어요!';
+  String get urgentTaskMessage {
+    if (hasOverdueTask) {
+      return '마감일이 지난 과제가 있어요!\n얼른 확인해 볼까요?';
+    }
+    return '오늘이 마감일인 과제가 있어요!';
+  }
 
   bool get isSummaryVisible => !_isSummaryDismissed;
 
