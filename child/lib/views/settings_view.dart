@@ -226,7 +226,7 @@ class _TextSettingsSection extends StatelessWidget {
             max: 32.0,
             divisions: 8,
             activeColor: AppColors.ocean,
-            inactiveColor: AppColors.oceanSoft.withOpacity(0.3),
+            inactiveColor: AppColors.oceanSoft.withValues(alpha: 0.3),
             onChanged: (val) =>
                 context.read<SettingsViewModel>().setTextSize(val),
           ),
@@ -256,7 +256,7 @@ class _TextSettingsSection extends StatelessWidget {
               const Text('글자 굵게 보기', style: AppTypography.bodyLarge),
               Switch(
                 value: viewModel.isBold,
-                activeColor: AppColors.surface,
+                activeThumbColor: AppColors.surface,
                 activeTrackColor: AppColors.ocean,
                 inactiveThumbColor: AppColors.border,
                 onChanged: (_) =>
@@ -332,7 +332,7 @@ class _FontPreview extends StatelessWidget {
           Text(
             '미리보기',
             style: AppTypography.bodyMedium.copyWith(
-              color: AppColors.ink.withOpacity(0.6),
+              color: AppColors.ink.withValues(alpha: 0.6),
             ),
           ),
           const SizedBox(height: 8),
