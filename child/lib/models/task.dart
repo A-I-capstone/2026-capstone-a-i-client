@@ -12,11 +12,7 @@ class SubTask {
     this.isCompleted = false,
   });
 
-  SubTask copyWith({
-    String? id,
-    String? title,
-    bool? isCompleted,
-  }) {
+  SubTask copyWith({String? id, String? title, bool? isCompleted}) {
     return SubTask(
       id: id ?? this.id,
       title: title ?? this.title,
@@ -25,11 +21,7 @@ class SubTask {
   }
 
   Map<String, dynamic> toFirestore() {
-    return {
-      'id': id,
-      'title': title,
-      'isCompleted': isCompleted,
-    };
+    return {'id': id, 'title': title, 'isCompleted': isCompleted};
   }
 
   factory SubTask.fromFirestore(Map<String, dynamic> data) {
@@ -72,19 +64,33 @@ class Task {
   });
 
   bool get isDueToday {
-    if (dueDate == null) return false;
+    final d = dueDate;
+    if (d == null) return false;
     final now = DateTime.now();
-    return dueDate!.year == now.year &&
-        dueDate!.month == now.month &&
-        dueDate!.day == now.day;
+    return d.year == now.year && d.month == now.month && d.day == now.day;
   }
 
   bool get isDueThisWeek {
-    if (dueDate == null) return false;
+    final d = dueDate;
+    if (d == null) return false;
     final now = DateTime.now();
-    final endOfWeek = DateTime(now.year, now.month, now.day + (7 - now.weekday));
-    return dueDate!.isBefore(endOfWeek.add(const Duration(days: 1))) || isDueToday;
+    final endOfWeek = DateTime(
+      now.year,
+      now.month,
+      now.day + (7 - now.weekday),
+    );
+    return d.isBefore(endOfWeek.add(const Duration(days: 1))) || isDueToday;
   }
+
+  bool get isPastDue {
+    final d = dueDate;
+    if (d == null) return false;
+    final now = DateTime.now();
+    final startOfDay = DateTime(now.year, now.month, now.day);
+    return d.isBefore(startOfDay);
+  }
+
+  bool get isOverdue => !isCompleted && isPastDue;
 
   Task copyWith({
     String? id,
@@ -113,11 +119,16 @@ class Task {
   }
 
   Map<String, dynamic> toFirestore() {
+    final created = createdAt;
+    final due = dueDate;
+    final completed = completedAt;
     return {
       'title': title,
-      'createdAt': createdAt != null ? Timestamp.fromDate(createdAt!) : FieldValue.serverTimestamp(),
-      'dueDate': dueDate != null ? Timestamp.fromDate(dueDate!) : null,
-      'completedAt': completedAt != null ? Timestamp.fromDate(completedAt!) : null,
+      'createdAt': created != null
+          ? Timestamp.fromDate(created)
+          : FieldValue.serverTimestamp(),
+      'dueDate': due != null ? Timestamp.fromDate(due) : null,
+      'completedAt': completed != null ? Timestamp.fromDate(completed) : null,
       'isCompleted': isCompleted,
       'subtasks': subtasks.map((s) => s.toFirestore()).toList(),
       'chatId': chatId,
@@ -135,7 +146,9 @@ class Task {
       completedAt: (data['completedAt'] as Timestamp?)?.toDate(),
       isCompleted: data['isCompleted'] as bool? ?? false,
       subtasks: subtasksData
-          .map((s) => SubTask.fromFirestore(Map<String, dynamic>.from(s as Map)))
+          .map(
+            (s) => SubTask.fromFirestore(Map<String, dynamic>.from(s as Map)),
+          )
           .toList(),
       chatId: data['chatId'] as String? ?? '',
       subjectId: data['subjectId'] as String? ?? '',
