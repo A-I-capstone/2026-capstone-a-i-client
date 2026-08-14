@@ -47,6 +47,7 @@ class ChildPairingViewModel extends ChangeNotifier {
   void toggleMode() {
     _isQrMode = !_isQrMode;
     _errorMessage = '';
+    debugPrint('[Child Pairing VM] 모드 전환: isQrMode=$_isQrMode');
     notifyListeners();
   }
 
@@ -56,7 +57,13 @@ class ChildPairingViewModel extends ChangeNotifier {
     required String code,
     required String childUid,
   }) async {
-    if (code.length != 6 || childUid.isEmpty) return;
+    debugPrint('[Child Pairing VM] submitCode 호출 (code: "$code", childUid: "$childUid")');
+    if (code.length != 6 || childUid.isEmpty) {
+      debugPrint(
+        '[Child Pairing VM] 유효성 검사 실패 (code 길이: ${code.length}, childUid 비어있음 여부: ${childUid.isEmpty})',
+      );
+      return;
+    }
 
     _status = ChildPairingStatus.loading;
     _errorMessage = '';
@@ -68,9 +75,12 @@ class ChildPairingViewModel extends ChangeNotifier {
         childUid: childUid,
       );
 
+      debugPrint('[Child Pairing VM] submitPairingCode 결과 수신: "$result"');
+
       if (result.isNotEmpty) {
         _familyId = result;
         _status = ChildPairingStatus.success;
+        debugPrint('[Child Pairing VM] 페어링 성공 상태로 전환! familyId: $_familyId');
       } else {
         // Increment attempts counter in background
         final provider = _pairingProvider;
@@ -79,9 +89,10 @@ class ChildPairingViewModel extends ChangeNotifier {
         }
         _status = ChildPairingStatus.failure;
         _errorMessage = '코드가 올바르지 않거나 만료되었어요. 다시 확인해 보세요!';
+        debugPrint('[Child Pairing VM] 페어링 실패 상태로 전환 (코드 불일치/만료/오류)');
       }
     } catch (e, st) {
-      debugPrint('[ChildPairingViewModel] submitCode 오류: $e\n$st');
+      debugPrint('[Child Pairing VM] submitCode 예외 발생: $e\n$st');
       _status = ChildPairingStatus.failure;
       _errorMessage = '연결에 문제가 생겼어요. 잠시 후 다시 시도해 보세요!';
     } finally {

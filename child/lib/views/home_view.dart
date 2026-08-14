@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared/shared.dart';
 
+import '../main.dart'
+    show modelName, systemPrompt, titleModelName, titleSystemPrompt;
+import '../models/subject.dart';
 import '../models/task.dart';
 import '../services/chat/firestore_chat_repository.dart';
 import '../services/llm/gemini_provider.dart';
@@ -18,8 +21,6 @@ import '../widgets/pulse_loader.dart';
 import '../widgets/task_add_edit_sheet.dart';
 import 'chat_view.dart';
 import 'settings_view.dart';
-import '../main.dart'
-    show modelName, systemPrompt, titleModelName, titleSystemPrompt;
 
 // TODO: 과제 -> 채팅으로 들어갔을 때 프롬프트에 과제 내용이 반영되도록 하기
 // TODO: 부모 앱에서 일단 연동화면 들어가면 못 나가는 버그? 고치기
@@ -58,9 +59,9 @@ class _HomeViewContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return const Scaffold(
       backgroundColor: AppColors.bg,
-      body: const SafeArea(
+      body: SafeArea(
         child: CustomScrollView(
           slivers: [
             SliverPadding(
@@ -79,36 +80,35 @@ class _HomeViewContent extends StatelessWidget {
               ),
             ),
             _TaskListSection(),
+            SliverToBoxAdapter(
+              child: SizedBox(height: 90),
+            ),
           ],
         ),
       ),
-      bottomNavigationBar: const _HomeBottomBar(),
+      bottomNavigationBar: _HomeBottomBar(),
     );
   }
 }
 
-/// Top header bar containing Settings button and "새 과제 추가" button.
+/// Top header bar containing Settings button and "과제 관리" placeholder button.
 class _HomeHeader extends StatelessWidget {
   const _HomeHeader();
 
   @override
   Widget build(BuildContext context) {
-    final homeViewModel = context.read<HomeViewModel>();
-    final subjectViewModel = context.read<SubjectViewModel>();
-
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        BouncyButton(
-          isCircle: true,
-          backgroundColor: AppColors.sunriseYellow,
-          padding: const EdgeInsets.all(10),
+        IconButton(
           icon: const Icon(
             Icons.settings_rounded,
             color: AppColors.ink,
             size: 32,
           ),
-          onTap: () {
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+          onPressed: () {
             Navigator.of(
               context,
             ).push(MaterialPageRoute(builder: (_) => const SettingsView()));
@@ -118,27 +118,17 @@ class _HomeHeader extends StatelessWidget {
           backgroundColor: AppColors.ink,
           foregroundColor: AppColors.surface,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          label: '새 과제 추가',
+          label: '과제 관리',
           icon: const Icon(
-            Icons.add_rounded,
+            Icons.view_headline_rounded,
             color: AppColors.surface,
-            size: 24,
+            size: 22,
           ),
           onTap: () {
-            showModalBottomSheet(
-              context: context,
-              isScrollControlled: true,
-              backgroundColor: Colors.transparent,
-              builder: (_) => MultiProvider(
-                providers: [
-                  ChangeNotifierProvider.value(value: homeViewModel),
-                  ChangeNotifierProvider.value(value: subjectViewModel),
-                ],
-                child: TaskAddEditSheet(
-                  onSave: (title, dueDate, subtasks, subjectId) {
-                    homeViewModel.addTask(title, dueDate, subtasks, subjectId);
-                  },
-                ),
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('과제 관리 기능은 준비 중이에요!'),
+                duration: Duration(seconds: 2),
               ),
             );
           },
@@ -249,50 +239,132 @@ class _TaskSummarySection extends StatelessWidget {
   }
 }
 
-/// Controls bar with sort filter options.
+/// Controls bar with "+ 추가" button and compact sort button.
 class _TaskControlBar extends StatelessWidget {
   const _TaskControlBar();
 
   @override
   Widget build(BuildContext context) {
     final viewModel = context.watch<HomeViewModel>();
+    final subjectViewModel = context.read<SubjectViewModel>();
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Padding(
-          padding: const EdgeInsets.only(left: 6),
+          padding: const EdgeInsets.only(left: 4),
           child: Text(
             '과제 목록',
             style: AppTypography.headlineMedium.copyWith(fontSize: 22),
           ),
         ),
-        DropdownButton<TaskSortOption>(
-          value: viewModel.sortOption,
-          underline: const SizedBox.shrink(),
-          icon: const Icon(Icons.filter_list_rounded, color: AppColors.ink),
-          items: const [
-            DropdownMenuItem(
-              value: TaskSortOption.dueDate,
-              child: Text('마감 기한 순', style: AppTypography.bodyMedium),
+        Row(
+          children: [
+            _AddTaskButton(
+              onTap: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (_) => MultiProvider(
+                    providers: [
+                      ChangeNotifierProvider.value(value: viewModel),
+                      ChangeNotifierProvider.value(value: subjectViewModel),
+                    ],
+                    child: TaskAddEditSheet(
+                      onSave: (title, dueDate, subtasks, subjectId) {
+                        viewModel.addTask(title, dueDate, subtasks, subjectId);
+                      },
+                    ),
+                  ),
+                );
+              },
             ),
-            DropdownMenuItem(
-              value: TaskSortOption.createdDate,
-              child: Text('최신 생성 순', style: AppTypography.bodyMedium),
+            const SizedBox(width: 6),
+            _SortMenuButton(
+              selectedOption: viewModel.sortOption,
+              onSelected: (option) => viewModel.setSortOption(option),
             ),
           ],
-          onChanged: (val) {
-            if (val != null) {
-              viewModel.setSortOption(val);
-            }
-          },
         ),
       ],
     );
   }
 }
 
-/// List section rendering tasks as a checklist.
+class _AddTaskButton extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _AddTaskButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(100),
+          border: Border.all(color: AppColors.ink, width: 2),
+        ),
+        child: Text(
+          '+ 추가',
+          style: AppTypography.bodyMedium.copyWith(
+            fontWeight: FontWeight.w700,
+            color: AppColors.ink,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SortMenuButton extends StatelessWidget {
+  final TaskSortOption selectedOption;
+  final ValueChanged<TaskSortOption> onSelected;
+
+  const _SortMenuButton({
+    required this.selectedOption,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Theme(
+      data: Theme.of(context).copyWith(
+        cardColor: AppColors.surface,
+      ),
+      child: PopupMenuButton<TaskSortOption>(
+        initialValue: selectedOption,
+        icon: const Icon(
+          Icons.swap_vert_rounded,
+          color: AppColors.ink,
+          size: 26,
+        ),
+        padding: EdgeInsets.zero,
+        constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: AppColors.ink, width: 2),
+        ),
+        onSelected: onSelected,
+        itemBuilder: (context) => const [
+          PopupMenuItem(
+            value: TaskSortOption.dueDate,
+            child: Text('마감 기한 순', style: AppTypography.bodyMedium),
+          ),
+          PopupMenuItem(
+            value: TaskSortOption.createdDate,
+            child: Text('최신 생성 순', style: AppTypography.bodyMedium),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// List section rendering tasks directly on the background without card containers.
 class _TaskListSection extends StatelessWidget {
   const _TaskListSection();
 
@@ -316,7 +388,7 @@ class _TaskListSection extends StatelessWidget {
           padding: const EdgeInsets.all(40.0),
           child: Center(
             child: Text(
-              '등록된 과제가 없어요!\n위의 [새 과제 추가] 버튼을 눌러보세요.',
+              '등록된 과제가 없어요!\n[+ 추가] 버튼을 눌러보세요.',
               textAlign: TextAlign.center,
               style: AppTypography.bodyLarge.copyWith(color: AppColors.slate),
             ),
@@ -331,7 +403,7 @@ class _TaskListSection extends StatelessWidget {
         delegate: SliverChildBuilderDelegate((context, index) {
           final task = tasks[index];
           return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.only(bottom: 24),
             child: _TaskRowTile(task: task),
           );
         }, childCount: tasks.length),
@@ -340,7 +412,8 @@ class _TaskListSection extends StatelessWidget {
   }
 }
 
-/// Single Task item represented as a list item with subtask checklist.
+/// Single Task item rendered without background card, with subject chip, checkbox,
+/// deadline label, and "채팅으로 이동 >" button.
 class _TaskRowTile extends StatelessWidget {
   final Task task;
 
@@ -353,217 +426,57 @@ class _TaskRowTile extends StatelessWidget {
     final subject = subjectViewModel.getSubjectById(task.subjectId);
 
     return GestureDetector(
-      onLongPress: () {
-        showModalBottomSheet(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          builder: (_) => MultiProvider(
-            providers: [
-              ChangeNotifierProvider.value(value: homeViewModel),
-              ChangeNotifierProvider.value(value: subjectViewModel),
-            ],
-            child: TaskAddEditSheet(
+      behavior: HitTestBehavior.opaque,
+      onLongPress: () => _showEditSheet(context),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _TaskCheckbox(
+            isCompleted: task.isCompleted,
+            onTap: () => homeViewModel.toggleTask(task.id),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _TaskContent(
               task: task,
-              onSave: (title, dueDate, subtasks, subjectId) {
-                homeViewModel.editTask(
-                  task,
-                  title,
-                  dueDate,
-                  subtasks,
-                  subjectId,
-                );
-              },
+              subject: subject,
+              onToggleSubtask: (subtaskId) =>
+                  homeViewModel.toggleSubtask(task.id, subtaskId),
             ),
           ),
-        );
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          color: task.isDueToday ? const Color(0xFFFFF3CD) : AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.ink, width: 2),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Main task row
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => homeViewModel.toggleTask(task.id),
-                    child: Icon(
-                      task.isCompleted
-                          ? Icons.check_box_rounded
-                          : Icons.check_box_outline_blank_rounded,
-                      color: AppColors.ink,
-                      size: 28,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (subject != null) ...[
-                          Container(
-                            margin: const EdgeInsets.only(bottom: 4),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Color(subject.colorValue),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: AppColors.ink,
-                                width: 1.5,
-                              ),
-                            ),
-                            child: Text(
-                              subject.name,
-                              style: AppTypography.bodyMedium.copyWith(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.ink,
-                              ),
-                            ),
-                          ),
-                        ],
-                        Text(
-                          task.title,
-                          style: AppTypography.bodyLarge.copyWith(
-                            fontSize: 19,
-                            fontWeight: FontWeight.w700,
-                            decoration: task.isCompleted
-                                ? TextDecoration.lineThrough
-                                : null,
-                            color: task.isCompleted
-                                ? AppColors.slate
-                                : AppColors.ink,
-                          ),
-                        ),
-                        if (task.dueDate != null) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            task.isDueToday
-                                ? '(마감기한: 오늘)'
-                                : '(마감기한: ${task.dueDate!.month}월 ${task.dueDate!.day}일)',
-                            style: AppTypography.bodyMedium.copyWith(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: task.isDueToday
-                                  ? AppColors.tangerine
-                                  : AppColors.slate,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.delete_outline_rounded,
-                      color: AppColors.clay,
-                      size: 22,
-                    ),
-                    onPressed: () => homeViewModel.deleteTask(task.id),
-                  ),
-                ],
-              ),
-            ),
+          const SizedBox(width: 8),
+          _ChatNavButton(
+            onTap: () => _navigateToChat(context, task),
+          ),
+        ],
+      ),
+    );
+  }
 
-            // Subtasks list if any
-            if (task.subtasks.isNotEmpty) ...[
-              const Divider(color: AppColors.border, height: 1, thickness: 1),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 8, 12, 8),
-                child: Column(
-                  children: [
-                    for (final st in task.subtasks) ...[
-                      GestureDetector(
-                        onTap: () =>
-                            homeViewModel.toggleSubtask(task.id, st.id),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          child: Row(
-                            children: [
-                              Icon(
-                                st.isCompleted
-                                    ? Icons.check_box_rounded
-                                    : Icons.check_box_outline_blank_rounded,
-                                color: AppColors.ink,
-                                size: 20,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  st.title,
-                                  style: AppTypography.bodyMedium.copyWith(
-                                    decoration: st.isCompleted
-                                        ? TextDecoration.lineThrough
-                                        : null,
-                                    color: st.isCompleted
-                                        ? AppColors.slate
-                                        : AppColors.ink,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
+  void _showEditSheet(BuildContext context) {
+    final homeViewModel = context.read<HomeViewModel>();
+    final subjectViewModel = context.read<SubjectViewModel>();
 
-            // Chat room navigation button
-            Container(
-              width: double.infinity,
-              decoration: const BoxDecoration(
-                border: Border(
-                  top: BorderSide(color: AppColors.ink, width: 1.5),
-                ),
-              ),
-              child: InkWell(
-                onTap: () => _navigateToChat(context, task),
-                borderRadius: const BorderRadius.vertical(
-                  bottom: Radius.circular(14),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.chat_bubble_outline_rounded,
-                        color: AppColors.ink,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'AI 학습 도움 받기',
-                        style: AppTypography.bodyMedium.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.ink,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      const Icon(
-                        Icons.chevron_right_rounded,
-                        color: AppColors.ink,
-                        size: 20,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => MultiProvider(
+        providers: [
+          ChangeNotifierProvider.value(value: homeViewModel),
+          ChangeNotifierProvider.value(value: subjectViewModel),
+        ],
+        child: TaskAddEditSheet(
+          task: task,
+          onSave: (title, dueDate, subtasks, subjectId) {
+            homeViewModel.editTask(
+              task,
+              title,
+              dueDate,
+              subtasks,
+              subjectId,
+            );
+          },
         ),
       ),
     );
@@ -573,7 +486,6 @@ class _TaskRowTile extends StatelessWidget {
     final authProvider = context.read<BaseAuthProvider>();
     final userId = authProvider.currentUid ?? '';
 
-    // Create providerManager on demand using Remote Config values
     final providerManager = ProviderManager(
       provider: GeminiProvider(
         modelName: modelName,
@@ -604,19 +516,188 @@ class _TaskRowTile extends StatelessWidget {
   }
 }
 
-/// Bottom navigation bar.
+class _TaskCheckbox extends StatelessWidget {
+  final bool isCompleted;
+  final VoidCallback onTap;
+
+  const _TaskCheckbox({
+    required this.isCompleted,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.only(top: 2),
+        child: Icon(
+          isCompleted
+              ? Icons.check_box_rounded
+              : Icons.check_box_outline_blank_rounded,
+          color: AppColors.ink,
+          size: 30,
+        ),
+      ),
+    );
+  }
+}
+
+class _TaskContent extends StatelessWidget {
+  final Task task;
+  final Subject? subject;
+  final ValueChanged<String> onToggleSubtask;
+
+  const _TaskContent({
+    required this.task,
+    required this.subject,
+    required this.onToggleSubtask,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final dueDate = task.dueDate;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (subject case final s?) ...[
+          Container(
+            margin: const EdgeInsets.only(bottom: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+            decoration: BoxDecoration(
+              color: Color(s.colorValue),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppColors.ink, width: 1.5),
+            ),
+            child: Text(
+              s.name,
+              style: AppTypography.bodyMedium.copyWith(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: AppColors.ink,
+              ),
+            ),
+          ),
+        ],
+        Text(
+          task.title,
+          style: AppTypography.bodyLarge.copyWith(
+            fontSize: 19,
+            fontWeight: FontWeight.w700,
+            decoration: task.isCompleted ? TextDecoration.lineThrough : null,
+            color: task.isCompleted ? AppColors.slate : AppColors.ink,
+          ),
+        ),
+        if (dueDate != null) ...[
+          const SizedBox(height: 3),
+          Text(
+            task.isDueToday
+                ? '(마감기한: 오늘)'
+                : '(마감기한: ${dueDate.month}월 ${dueDate.day}일)',
+            style: AppTypography.bodyMedium.copyWith(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: task.isDueToday ? AppColors.tangerine : AppColors.slate,
+            ),
+          ),
+        ],
+        if (task.subtasks.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          for (final st in task.subtasks) ...[
+            GestureDetector(
+              onTap: () => onToggleSubtask(st.id),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Row(
+                  children: [
+                    Icon(
+                      st.isCompleted
+                          ? Icons.check_box_rounded
+                          : Icons.check_box_outline_blank_rounded,
+                      color: AppColors.ink,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        st.title,
+                        style: AppTypography.bodyMedium.copyWith(
+                          fontSize: 14,
+                          decoration:
+                              st.isCompleted ? TextDecoration.lineThrough : null,
+                          color:
+                              st.isCompleted ? AppColors.slate : AppColors.ink,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ],
+      ],
+    );
+  }
+}
+
+class _ChatNavButton extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _ChatNavButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(100),
+          border: Border.all(color: AppColors.ink, width: 1.5),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '채팅으로 이동',
+              style: AppTypography.bodyMedium.copyWith(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: AppColors.ink,
+              ),
+            ),
+            const SizedBox(width: 2),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: AppColors.ink,
+              size: 18,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Floating iOS-style bottom navigation bar.
 class _HomeBottomBar extends StatelessWidget {
   const _HomeBottomBar();
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        border: Border(top: BorderSide(color: AppColors.ink, width: 2)),
-      ),
-      child: const SafeArea(
-        child: Row(
+    return SafeArea(
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(40, 0, 40, 16),
+        height: 64,
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(100),
+          border: Border.all(color: AppColors.ink, width: 2),
+        ),
+        child: const Row(
           children: [
             _BottomNavItem(
               icon: Icons.check_circle_outline_rounded,
@@ -649,29 +730,24 @@ class _BottomNavItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: Container(
-        height: 60,
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                color: isSelected ? AppColors.ink : AppColors.slate,
-                size: 26,
-              ),
-              const SizedBox(height: 2),
-              Text(
-                label,
-                style: AppTypography.bodyMedium.copyWith(
-                  fontSize: 13,
-                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
-                  color: isSelected ? AppColors.ink : AppColors.slate,
-                ),
-              ),
-            ],
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            icon,
+            color: isSelected ? AppColors.ink : AppColors.slate,
+            size: 26,
           ),
-        ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: AppTypography.bodyMedium.copyWith(
+              fontSize: 13,
+              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+              color: isSelected ? AppColors.ink : AppColors.slate,
+            ),
+          ),
+        ],
       ),
     );
   }
