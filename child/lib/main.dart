@@ -124,7 +124,7 @@ class CapstoneAiApp extends StatelessWidget {
     final settings = context.watch<SettingsViewModel>();
 
     return MaterialApp(
-      title: 'Capstone AI Client',
+      title: 'A-아이 (학생)',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.buildTheme(
         fontFamily: settings.fontFamily,
