@@ -14,11 +14,11 @@ class SettingsViewModel extends ChangeNotifier {
   /// All fonts registered in pubspec.yaml (NanumMyeongjo excluded per design guide).
   static const List<AppFont> availableFonts = [
     AppFont(displayName: '기본 폰트', fontFamily: null),
-    AppFont(displayName: '나눔고딕', fontFamily: 'NanumGothic'),
-    AppFont(displayName: '나눔스퀘어', fontFamily: 'NanumSquare'),
-    AppFont(displayName: '나눔스퀘어 ac', fontFamily: 'NanumSquare_ac'),
-    AppFont(displayName: '나눔스퀘어 라운드', fontFamily: 'NanumSquareRound'),
-    AppFont(displayName: '나눔바른펜', fontFamily: 'NanumBarunpen'),
+    AppFont(displayName: '나눔고딕', fontFamily: 'packages/shared/NanumGothic'),
+    AppFont(displayName: '나눔스퀘어', fontFamily: 'packages/shared/NanumSquare'),
+    AppFont(displayName: '나눔스퀘어 ac', fontFamily: 'packages/shared/NanumSquare_ac'),
+    AppFont(displayName: '나눔스퀘어 라운드', fontFamily: 'packages/shared/NanumSquareRound'),
+    AppFont(displayName: '나눔바른펜', fontFamily: 'packages/shared/NanumBarunpen'),
   ];
 
   String _selectedFontDisplayName = '기본 폰트';
