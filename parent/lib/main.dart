@@ -88,7 +88,7 @@ class ParentApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: '부모용 앱',
+      title: 'A-아이 (보호자)',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       home: Consumer<ParentOnboardingViewModel>(

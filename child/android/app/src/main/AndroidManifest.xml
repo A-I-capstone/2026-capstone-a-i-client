@@ -1,9 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.CAMERA" />
     <application
-        android:label="capstone_ai_client"
+        android:label="A-아이 (학생)"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/a_ai_icon">
         <activity
             android:name=".MainActivity"
             android:exported="true"
