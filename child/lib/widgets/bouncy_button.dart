@@ -11,6 +11,7 @@ class BouncyButton extends StatefulWidget {
   final Color backgroundColor;
   final Color foregroundColor;
   final bool isCircle;
+  final TextStyle? labelStyle;
   final EdgeInsetsGeometry? padding;
 
   const BouncyButton({
@@ -21,6 +22,7 @@ class BouncyButton extends StatefulWidget {
     this.backgroundColor = AppColors.ink,
     this.foregroundColor = AppColors.surface,
     this.isCircle = false,
+    this.labelStyle,
     this.padding,
   });
 
@@ -75,6 +77,7 @@ class _BouncyButtonState extends State<BouncyButton>
           backgroundColor: widget.backgroundColor,
           foregroundColor: widget.foregroundColor,
           isCircle: widget.isCircle,
+          labelStyle: widget.labelStyle,
           padding: widget.padding,
         ),
       ),
@@ -88,6 +91,7 @@ class _ButtonContainer extends StatelessWidget {
   final Color backgroundColor;
   final Color foregroundColor;
   final bool isCircle;
+  final TextStyle? labelStyle;
   final EdgeInsetsGeometry? padding;
 
   const _ButtonContainer({
@@ -96,6 +100,7 @@ class _ButtonContainer extends StatelessWidget {
     required this.backgroundColor,
     required this.foregroundColor,
     required this.isCircle,
+    required this.labelStyle,
     required this.padding,
   });
 
@@ -131,7 +136,7 @@ class _ButtonContainer extends StatelessWidget {
               if (label case final labelText?)
                 Text(
                   labelText,
-                  style: AppTypography.buttonLabel.copyWith(
+                  style: (labelStyle ?? AppTypography.buttonLabel).copyWith(
                     color: foregroundColor,
                   ),
                 ),

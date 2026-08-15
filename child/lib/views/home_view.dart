@@ -23,6 +23,7 @@ import '../widgets/task_add_edit_sheet.dart';
 import 'calendar_view.dart';
 import 'chat_view.dart';
 import 'settings_view.dart';
+import 'task_subject_management_view.dart';
 
 /// Main Home view for the child app based on task checklist & calendar.
 class HomeView extends StatelessWidget {
@@ -172,17 +173,16 @@ class _HomeHeader extends StatelessWidget {
           backgroundColor: AppColors.ink,
           foregroundColor: AppColors.surface,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          label: '과제 관리',
+          label: '과제/과목 관리',
           icon: const Icon(
             Icons.view_headline_rounded,
             color: AppColors.surface,
             size: 22,
           ),
           onTap: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('과제 관리 기능은 준비 중이에요!'),
-                duration: Duration(seconds: 2),
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const TaskSubjectManagementView(),
               ),
             );
           },
