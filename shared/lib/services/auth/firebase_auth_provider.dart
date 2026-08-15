@@ -30,4 +30,30 @@ class FirebaseAuthProvider implements BaseAuthProvider {
       return '';
     }
   }
+
+  @override
+  Future<bool> deleteAccount() async {
+    try {
+      final user = _auth.currentUser;
+      if (user != null) {
+        await user.delete();
+        debugPrint('[FirebaseAuthProvider] deleteAccount 성공');
+        return true;
+      }
+      return true;
+    } catch (e, st) {
+      debugPrint('[FirebaseAuthProvider] deleteAccount error: $e\n$st');
+      return false;
+    }
+  }
+
+  @override
+  Future<void> signOut() async {
+    try {
+      await _auth.signOut();
+      debugPrint('[FirebaseAuthProvider] signOut 성공');
+    } catch (e, st) {
+      debugPrint('[FirebaseAuthProvider] signOut error: $e\n$st');
+    }
+  }
 }
