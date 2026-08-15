@@ -192,9 +192,13 @@ class HomeViewModel extends ChangeNotifier {
       if (index != -1) {
         final task = _tasks[index];
         final nowCompleted = !task.isCompleted;
+        final updatedSubtasks = task.subtasks
+            .map((st) => st.copyWith(isCompleted: nowCompleted))
+            .toList();
         final updated = task.copyWith(
           isCompleted: nowCompleted,
           completedAt: nowCompleted ? DateTime.now() : null,
+          subtasks: updatedSubtasks,
         );
         await _taskRepository.updateTask(_userId, updated);
       }
