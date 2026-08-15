@@ -12,4 +12,11 @@ abstract class BaseAuthProvider {
   /// The UID of the currently signed-in user.
   /// Returns null if no user is signed in.
   String? get currentUid;
+
+  /// Deletes the currently signed-in user's Firebase Auth account.
+  /// Fails silently / returns false on error (never throws).
+  Future<bool> deleteAccount();
+
+  /// Signs out the currently signed-in user.
+  Future<void> signOut();
 }

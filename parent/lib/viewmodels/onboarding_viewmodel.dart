@@ -52,5 +52,20 @@ class ParentOnboardingViewModel extends ChangeNotifier {
       debugPrint('[ParentOnboardingViewModel] completePairing error: $e');
     }
   }
+
+  /// Resets terms and pairing flags in state and SharedPreferences (e.g. on account data deletion).
+  Future<void> resetAll() async {
+    _termsAccepted = false;
+    _pairingComplete = false;
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(kParentTermsAccepted);
+      await prefs.remove(kParentPairingComplete);
+      debugPrint('[ParentOnboardingViewModel] resetAll 완료: 모든 온보딩 상태 초기화');
+    } catch (e) {
+      debugPrint('[ParentOnboardingViewModel] resetAll error: $e');
+    }
+  }
 }
 
