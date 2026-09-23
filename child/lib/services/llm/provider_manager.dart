@@ -12,17 +12,15 @@ class ProviderManager {
   final BaseLLMProvider _titleProvider;
 
   ProviderManager({
-    required BaseLLMProvider provider,
+    required this._provider,
     required BaseLLMProvider titleProvider,
-  })  : _provider = provider,
-        _titleProvider = titleProvider;
+  }) : _titleProvider = titleProvider;
 
   /// Delegates to the active provider's streaming method.
   Stream<String> sendMessageStream(
     String userMessage, {
     List history = const [],
-  }) =>
-      _provider.sendMessageStream(userMessage, history: history);
+  }) => _provider.sendMessageStream(userMessage, history: history);
 
   /// Generates a chat title based on the first user message.
   Future<String> generateTitle(String firstMessage) async {
