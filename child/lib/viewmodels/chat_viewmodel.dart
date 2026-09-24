@@ -102,6 +102,15 @@ class ChatViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Updates the Google Search grounding state on the active LLM provider.
+  ///
+  /// Called by the View layer when [SettingsViewModel.isGroundingEnabled]
+  /// changes. Delegates to [ProviderManager] so this ViewModel stays
+  /// decoupled from the concrete provider implementation.
+  Future<void> updateGrounding(bool isEnabled) async {
+    await _providerManager.updateGrounding(isEnabled);
+  }
+
   Future<void> sendMessage(String text) async {
     final trimmedText = text.trim();
     if (trimmedText.isEmpty) return;
