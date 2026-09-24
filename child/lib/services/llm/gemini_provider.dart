@@ -9,16 +9,29 @@ import 'base_llm_provider.dart';
 ///
 /// Uses [FirebaseAI.googleAI] and the Chat Session API so that conversation
 /// history can be injected without changing the public interface.
+///
+/// When [isGroundingEnabled] is true, [Tool.googleSearch] is attached to the
+/// model so that responses are grounded with live Google Search results.
 class GeminiProvider implements BaseLLMProvider {
   final String modelName;
   final String systemPrompt;
+  final bool isGroundingEnabled;
 
-  late final GenerativeModel _model;
+  late GenerativeModel _model;
 
-  GeminiProvider({required this.modelName, required this.systemPrompt}) {
-    _model = FirebaseAI.googleAI().generativeModel(
+  GeminiProvider({
+    required this.modelName,
+    required this.systemPrompt,
+    this.isGroundingEnabled = false,
+  }) {
+    _model = _buildModel();
+  }
+
+  GenerativeModel _buildModel() {
+    return FirebaseAI.googleAI().generativeModel(
       model: modelName,
       systemInstruction: Content.system(systemPrompt),
+      tools: isGroundingEnabled ? [Tool.googleSearch()] : null,
     );
   }
 
@@ -37,15 +50,48 @@ class GeminiProvider implements BaseLLMProvider {
     _printDebugContext(userMessage, history);
 
     final chat = _model.startChat(history: contentHistory);
+    var hasYielded = false;
 
     try {
       final responseStream = chat.sendMessageStream(Content.text(userMessage));
 
       await for (final response in responseStream) {
         // TODO: postprocessOutput() hook — apply output filtering here
-        yield response.text ?? '';
+        final text = response.text ?? '';
+        if (text.isNotEmpty) {
+          hasYielded = true;
+          yield text;
+        }
       }
     } catch (e, stackTrace) {
+      // Graceful degradation: If grounding was enabled and failed before yielding
+      // any tokens (e.g. 429 quota exceeded on unbilled project or search tool error),
+      // seamlessly fall back to non-grounded generation so the child receives an answer.
+      if (isGroundingEnabled && !hasYielded) {
+        debugPrint(
+          '[GeminiProvider] Grounding streaming failed ($e). '
+          'Gracefully falling back to non-grounded model...',
+        );
+        try {
+          final fallbackModel = FirebaseAI.googleAI().generativeModel(
+            model: modelName,
+            systemInstruction: Content.system(systemPrompt),
+          );
+          final fallbackChat = fallbackModel.startChat(history: contentHistory);
+          final fallbackStream =
+              fallbackChat.sendMessageStream(Content.text(userMessage));
+
+          await for (final response in fallbackStream) {
+            yield response.text ?? '';
+          }
+          return;
+        } catch (fallbackError, fallbackStackTrace) {
+          debugPrint(
+            '[GeminiProvider] Fallback without grounding also failed: $fallbackError\n$fallbackStackTrace',
+          );
+        }
+      }
+
       debugPrint('[GeminiProvider] Streaming error: $e\n$stackTrace');
       // Re-throw so the caller (ProviderManager / ChatViewModel) can
       // discard the partial buffer and show a child-friendly fallback.
@@ -58,6 +104,7 @@ class GeminiProvider implements BaseLLMProvider {
     sb.writeln('==================== [Chat LLM Context] ====================');
     sb.writeln('[SYSTEM PROMPT]');
     sb.writeln(systemPrompt);
+    sb.writeln('[GROUNDING] Google Search: ${isGroundingEnabled ? "ON" : "OFF"}');
     sb.writeln('\n[CONVERSATION HISTORY (${history.length} items)]');
 
     if (history.isEmpty) {

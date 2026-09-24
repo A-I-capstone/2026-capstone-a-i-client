@@ -14,6 +14,7 @@ import '../theme/app_typography.dart';
 import '../viewmodels/calendar_viewmodel.dart';
 import '../viewmodels/chat_viewmodel.dart';
 import '../viewmodels/home_viewmodel.dart';
+import '../viewmodels/settings_viewmodel.dart';
 import '../viewmodels/subject_viewmodel.dart';
 import '../widgets/pulse_loader.dart';
 import '../widgets/task_add_edit_sheet.dart';
@@ -698,16 +699,22 @@ class _CalendarTaskRowTile extends StatelessWidget {
   void _navigateToChat(BuildContext context, Task task) {
     final authProvider = context.read<BaseAuthProvider>();
     final userId = authProvider.currentUid ?? '';
+    final isGrounding =
+        context.read<SettingsViewModel>().isGroundingEnabled;
 
     final providerManager = ProviderManager(
       provider: GeminiProvider(
         modelName: modelName,
         systemPrompt: systemPrompt,
+        isGroundingEnabled: isGrounding,
       ),
       titleProvider: GeminiProvider(
         modelName: titleModelName,
         systemPrompt: titleSystemPrompt,
+        isGroundingEnabled: false,
       ),
+      modelName: modelName,
+      systemPrompt: systemPrompt,
     );
 
     final chatVm = ChatViewModel(

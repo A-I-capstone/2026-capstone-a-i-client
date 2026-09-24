@@ -815,7 +815,7 @@ class _AppInfoSection extends StatelessWidget {
             ),
           ),
           Text(
-            'v1.0.0',
+            'v0.1.0-alpha',
             style: AppTypography.bodyMedium.copyWith(
               color: AppColors.slate,
               fontWeight: FontWeight.w700,

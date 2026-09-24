@@ -7,6 +7,7 @@ class SettingsViewModel extends ChangeNotifier {
   static const _keyFontFamily = 'settings_font_family';
   static const _keyIsBold = 'settings_is_bold';
   static const _keyTextSize = 'settings_text_size';
+  static const _keyGroundingEnabled = 'settings_grounding_enabled';
 
   static const double defaultTextSize = 18.0;
 
@@ -24,6 +25,7 @@ class SettingsViewModel extends ChangeNotifier {
   String _selectedFontDisplayName = '기본 폰트';
   bool _isBold = false;
   double _textSize = defaultTextSize;
+  bool _isGroundingEnabled = true;
 
   String get selectedFontDisplayName => _selectedFontDisplayName;
 
@@ -39,6 +41,9 @@ class SettingsViewModel extends ChangeNotifier {
   bool get isBold => _isBold;
   double get textSize => _textSize;
 
+  /// Whether Google Search grounding is enabled for AI chat. Defaults to true.
+  bool get isGroundingEnabled => _isGroundingEnabled;
+
   // ── Init ───────────────────────────────────────────────────────────────
 
   /// Must be called once after construction (awaited in main()).
@@ -53,6 +58,7 @@ class SettingsViewModel extends ChangeNotifier {
           prefs.getString(_keyFontFamily) ?? '기본 폰트';
       _isBold = prefs.getBool(_keyIsBold) ?? false;
       _textSize = prefs.getDouble(_keyTextSize) ?? defaultTextSize;
+      _isGroundingEnabled = prefs.getBool(_keyGroundingEnabled) ?? true;
     } catch (_) {
       // Fail gracefully; defaults are already set above.
     }
@@ -87,6 +93,16 @@ class SettingsViewModel extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setDouble(_keyTextSize, size);
+    } catch (_) {}
+  }
+
+  /// Toggles Google Search grounding for AI chat and persists the new value.
+  Future<void> toggleGrounding() async {
+    _isGroundingEnabled = !_isGroundingEnabled;
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_keyGroundingEnabled, _isGroundingEnabled);
     } catch (_) {}
   }
 }

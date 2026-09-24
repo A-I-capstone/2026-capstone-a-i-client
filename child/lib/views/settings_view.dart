@@ -42,6 +42,8 @@ class SettingsView extends StatelessWidget {
             SizedBox(height: 32),
             _TextSettingsSection(),
             SizedBox(height: 32),
+            _ChatAiSection(),
+            SizedBox(height: 32),
             _HelpSection(),
             SizedBox(height: 48),
           ],
@@ -351,6 +353,48 @@ class _FontPreview extends StatelessWidget {
                 height: 1.4,
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── AI 채팅 설정 섹션 ───────────────────────────────────────────────
+
+class _ChatAiSection extends StatelessWidget {
+  const _ChatAiSection();
+
+  @override
+  Widget build(BuildContext context) {
+    final viewModel = context.watch<SettingsViewModel>();
+
+    return _SettingsCard(
+      title: 'AI 채팅 설정',
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('구글 검색 연동', style: AppTypography.bodyLarge),
+                Text(
+                  '켜면 AI가 최신 정보를 검색해 답해줘요',
+                  style: AppTypography.bodyMedium.copyWith(
+                    color: AppColors.slate,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            value: viewModel.isGroundingEnabled,
+            activeThumbColor: AppColors.surface,
+            activeTrackColor: AppColors.ocean,
+            inactiveThumbColor: AppColors.border,
+            onChanged: (_) =>
+                context.read<SettingsViewModel>().toggleGrounding(),
           ),
         ],
       ),
