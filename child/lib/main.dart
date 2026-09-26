@@ -12,9 +12,11 @@ import 'views/nickname_setup_view.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
+import 'services/safety/safety_settings_listener.dart';
 import 'services/user/user_repository.dart';
 
 const _kPairingComplete = 'pairing_complete';
+const _kFamilyId = 'family_id';
 
 late String modelName;
 late String systemPrompt;
@@ -84,7 +86,8 @@ void main() async {
   // Check pairing status
   final prefs = await SharedPreferences.getInstance();
   final isPaired = prefs.getBool(_kPairingComplete) ?? false;
-  debugPrint('[Child Main] 기존 페어링 완료 여부 (SharedPreferences): isPaired=$isPaired');
+  final familyId = prefs.getString(_kFamilyId) ?? '';
+  debugPrint('[Child Main] 기존 페어링 완료 여부 (SharedPreferences): isPaired=$isPaired, familyId=$familyId');
 
   final userRepository = UserRepository();
   final userViewModel = UserViewModel(repository: userRepository);
@@ -93,6 +96,11 @@ void main() async {
   final settingsViewModel = SettingsViewModel();
   await settingsViewModel.init();
 
+  // Load initial safety settings from Firestore (before first frame)
+  final safetyListener = SafetySettingsListener(familyId: familyId);
+  final initialSafetySettings = await safetyListener.fetchOnce();
+  debugPrint('[Child Main] 초기 안전 설정 로드 완료: ${initialSafetySettings.toFirestore()}');
+
   runApp(
     MultiProvider(
       providers: [
@@ -100,6 +108,13 @@ void main() async {
         ChangeNotifierProvider<UserViewModel>.value(value: userViewModel),
         ChangeNotifierProvider<SettingsViewModel>.value(
           value: settingsViewModel,
+        ),
+        // SafetySettingsModel is exposed as a plain Provider (not ChangeNotifier)
+        // because it is replaced atomically via StreamProvider below.
+        StreamProvider<SafetySettingsModel>(
+          create: (_) => safetyListener.updates,
+          initialData: initialSafetySettings,
+          catchError: (_, __) => const SafetySettingsModel(),
         ),
       ],
       child: CapstoneAiApp(userId: userId, isPaired: isPaired, prefs: prefs),
@@ -167,6 +182,8 @@ class _PairingGateState extends State<_PairingGate> {
         );
         final navigator = Navigator.of(context);
         await widget.prefs.setBool(_kPairingComplete, true);
+        // familyId를 저장하여 다음 앱 시작 시 안전 설정 구독에 사용
+        await widget.prefs.setString(_kFamilyId, familyId);
         if (!mounted) return;
         navigator.pushReplacement(
           MaterialPageRoute(
