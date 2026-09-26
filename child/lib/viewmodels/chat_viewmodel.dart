@@ -6,6 +6,7 @@ import 'package:shared/shared.dart';
 import '../models/chat_message.dart';
 import '../models/task.dart';
 import '../services/chat/base_chat_repository.dart';
+import '../services/llm/gemini_provider.dart';
 import '../services/llm/provider_manager.dart';
 
 /// ViewModel managing per-task chat state and business logic.
@@ -102,6 +103,18 @@ class ChatViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Called by the safety-settings stream in [main.dart] whenever the parent
+  /// changes the safety settings. Rebuilds the underlying [ProviderManager]
+  /// so the next message uses the new configuration.
+  Future<void> applyNewSafetySettings(SafetySettingsModel settings) async {
+    try {
+      await _providerManager.rebuildWithSafetySettings(settings);
+      debugPrint('[ChatViewModel] 안전 설정 업데이트 적용 완료: ${settings.toFirestore()}');
+    } catch (e) {
+      debugPrint('[ChatViewModel] applyNewSafetySettings error: $e');
+    }
+  }
+
   Future<void> sendMessage(String text) async {
     final trimmedText = text.trim();
     if (trimmedText.isEmpty) return;
@@ -153,6 +166,18 @@ class ChatViewModel extends ChangeNotifier {
       _addToHistoryWindow(aiMsg);
 
       unawaited(_repository.saveMessage(_userId, task.id, task.chatId, aiMsg));
+    } on ContentBlockedException {
+      // The parent's safety settings blocked this response.
+      // Show a gentle, child-friendly explanation.
+      debugPrint('[ChatViewModel] 콘텐츠 차단 예외 처리 — 아동 친화적 메시지 표시');
+      _messages.add(
+        ChatMessage(
+          id: 'blocked_${DateTime.now().millisecondsSinceEpoch}',
+          sender: MessageSender.ai,
+          text: '앗, 그 이야기는 내가 도와드리기 어려워요. 다른 걸 물어봐 줄래요? 😊',
+          timestamp: DateTime.now(),
+        ),
+      );
     } catch (e, st) {
       debugPrint('[ChatViewModel] AI 스트리밍 중 오류 발생: $e\n$st');
       _messages.add(

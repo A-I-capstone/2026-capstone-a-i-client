@@ -11,6 +11,7 @@ import '../viewmodels/onboarding_viewmodel.dart';
 import '../viewmodels/parent_settings_viewmodel.dart';
 import '../widgets/bouncy_button.dart';
 import 'pairing_view.dart';
+import 'safety_settings_view.dart';
 
 /// Settings screen for Parent App.
 /// Includes child pairing, child unlinking, data deletion, and app info.
@@ -57,6 +58,8 @@ class _ParentSettingsContent extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           children: [
             _ChildManagementSection(parentUid: parentUid),
+            const SizedBox(height: 28),
+            _AiSafetySection(parentUid: parentUid),
             const SizedBox(height: 28),
             _DataManagementSection(parentUid: parentUid),
             const SizedBox(height: 28),
@@ -422,6 +425,95 @@ class _ChildSelectSheet extends StatelessWidget {
             const SizedBox(height: 8),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// AI Safety Settings Section
+// ---------------------------------------------------------------------------
+
+class _AiSafetySection extends StatelessWidget {
+  final String parentUid;
+
+  const _AiSafetySection({required this.parentUid});
+
+  void _onSafetySettingsTap(BuildContext context) {
+    final viewModel = context.read<ParentSettingsViewModel>();
+    final children = viewModel.children;
+
+    if (children.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('연동된 자녀가 없습니다.'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    if (children.length == 1) {
+      _navigateToSafetySettings(context, children.first);
+    } else {
+      _showChildSelectionModal(context, children);
+    }
+  }
+
+  void _showChildSelectionModal(
+    BuildContext context,
+    List<ChildInfo> children,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (bottomSheetContext) {
+        return _ChildSelectSheet(
+          children: children,
+          onChildSelected: (selectedChild) {
+            Navigator.of(bottomSheetContext).pop();
+            _navigateToSafetySettings(context, selectedChild);
+          },
+        );
+      },
+    );
+  }
+
+  void _navigateToSafetySettings(BuildContext context, ChildInfo child) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => SafetySettingsView(
+          familyId: child.familyId,
+          childName: child.name,
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _SettingsCard(
+      title: 'AI 안전 설정',
+      child: _SettingsActionTile(
+        iconWidget: Container(
+          width: 44,
+          height: 44,
+          decoration: const BoxDecoration(
+            color: AppColors.mint,
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(
+            Icons.shield_rounded,
+            color: AppColors.ink,
+            size: 24,
+          ),
+        ),
+        title: '자녀 AI 안전 설정',
+        description: '괴롭힘·증오·음란물·위험 콘텐츠 차단 강도를 조절합니다.',
+        onTap: () => _onSafetySettingsTap(context),
       ),
     );
   }

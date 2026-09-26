@@ -699,15 +699,24 @@ class _CalendarTaskRowTile extends StatelessWidget {
     final authProvider = context.read<BaseAuthProvider>();
     final userId = authProvider.currentUid ?? '';
 
+    final currentSettings =
+        context.read<SafetySettingsModel>();
+
     final providerManager = ProviderManager(
       provider: GeminiProvider(
         modelName: modelName,
         systemPrompt: systemPrompt,
+        safetySettings: currentSettings,
       ),
       titleProvider: GeminiProvider(
         modelName: titleModelName,
         systemPrompt: titleSystemPrompt,
+        safetySettings: currentSettings,
       ),
+      modelName: modelName,
+      systemPrompt: systemPrompt,
+      titleModelName: titleModelName,
+      titleSystemPrompt: titleSystemPrompt,
     );
 
     final chatVm = ChatViewModel(
