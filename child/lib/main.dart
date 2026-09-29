@@ -87,7 +87,9 @@ void main() async {
   final prefs = await SharedPreferences.getInstance();
   final isPaired = prefs.getBool(_kPairingComplete) ?? false;
   final familyId = prefs.getString(_kFamilyId) ?? '';
-  debugPrint('[Child Main] 기존 페어링 완료 여부 (SharedPreferences): isPaired=$isPaired, familyId=$familyId');
+  debugPrint(
+    '[Child Main] 기존 페어링 완료 여부 (SharedPreferences): isPaired=$isPaired, familyId=$familyId',
+  );
 
   final userRepository = UserRepository();
   final userViewModel = UserViewModel(repository: userRepository);

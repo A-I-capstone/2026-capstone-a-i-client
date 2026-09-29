@@ -90,9 +90,10 @@ class GeminiProvider implements BaseLLMProvider {
     } catch (e, stackTrace) {
       // Check if the error message indicates a safety block (SDK-level throw).
       final errorStr = e.toString().toLowerCase();
-      if (errorStr.contains('safety') ||
-          errorStr.contains('block') ||
-          errorStr.contains('harm')) {
+      if (e is! ArgumentError &&
+          (errorStr.contains('safety') ||
+              errorStr.contains('blocked') ||
+              errorStr.contains('harm_category'))) {
         debugPrint('[GeminiProvider] 안전 필터에 의해 차단됨 (예외): $e');
         throw const ContentBlockedException();
       }
