@@ -70,22 +70,22 @@ class SafetySettingsModel {
       SafetySetting(
         HarmCategory.harassment,
         _levelToThreshold(harassment),
-        HarmBlockMethod.probability,
+        null,
       ),
       SafetySetting(
         HarmCategory.hateSpeech,
         _levelToThreshold(hateSpeech),
-        HarmBlockMethod.probability,
+        null,
       ),
       SafetySetting(
         HarmCategory.sexuallyExplicit,
         _levelToThreshold(sexuallyExplicit),
-        HarmBlockMethod.probability,
+        null,
       ),
       SafetySetting(
         HarmCategory.dangerousContent,
         _levelToThreshold(dangerousContent),
-        HarmBlockMethod.probability,
+        null,
       ),
     ];
   }
