@@ -12,7 +12,7 @@ import 'views/nickname_setup_view.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
-import 'services/safety/safety_settings_listener.dart';
+// import 'services/safety/safety_settings_listener.dart';
 import 'services/user/user_repository.dart';
 
 const _kPairingComplete = 'pairing_complete';
@@ -97,9 +97,9 @@ void main() async {
   await settingsViewModel.init();
 
   // Load initial safety settings from Firestore (before first frame)
-  final safetyListener = SafetySettingsListener(familyId: familyId);
-  final initialSafetySettings = await safetyListener.fetchOnce();
-  debugPrint('[Child Main] 초기 안전 설정 로드 완료: ${initialSafetySettings.toFirestore()}');
+  // final safetyListener = SafetySettingsListener(familyId: familyId);
+  // final initialSafetySettings = await safetyListener.fetchOnce();
+  // debugPrint('[Child Main] 초기 안전 설정 로드 완료: ${initialSafetySettings.toFirestore()}');
 
   runApp(
     MultiProvider(
@@ -111,11 +111,11 @@ void main() async {
         ),
         // SafetySettingsModel is exposed as a plain Provider (not ChangeNotifier)
         // because it is replaced atomically via StreamProvider below.
-        StreamProvider<SafetySettingsModel>(
-          create: (_) => safetyListener.updates,
-          initialData: initialSafetySettings,
-          catchError: (_, __) => const SafetySettingsModel(),
-        ),
+        // StreamProvider<SafetySettingsModel>(
+        //   create: (_) => safetyListener.updates,
+        //   initialData: initialSafetySettings,
+        //   catchError: (_, __) => const SafetySettingsModel(),
+        // ),
       ],
       child: CapstoneAiApp(userId: userId, isPaired: isPaired, prefs: prefs),
     ),

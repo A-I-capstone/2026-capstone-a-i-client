@@ -551,19 +551,19 @@ class _TaskRowTile extends StatelessWidget {
     final authProvider = context.read<BaseAuthProvider>();
     final userId = authProvider.currentUid ?? '';
 
-    final currentSettings =
-        context.read<SafetySettingsModel>();
+    // final currentSettings =
+    //     context.read<SafetySettingsModel>();
 
     final providerManager = ProviderManager(
       provider: GeminiProvider(
         modelName: modelName,
         systemPrompt: systemPrompt,
-        safetySettings: currentSettings,
+        // safetySettings: currentSettings,
       ),
       titleProvider: GeminiProvider(
         modelName: titleModelName,
         systemPrompt: titleSystemPrompt,
-        safetySettings: currentSettings,
+        // safetySettings: currentSettings,
       ),
       modelName: modelName,
       systemPrompt: systemPrompt,
